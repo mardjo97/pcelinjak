@@ -74,6 +74,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    AutoSyncService.instance.stop();
+    await AuthService(widget.api).logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => AuthScreen(api: widget.api)),
+      (_) => false,
+    );
+  }
+
   Future<void> _deleteAccount() async {
     final l10n = AppLocalizations.of(context);
     final passwordCtrl = TextEditingController();
@@ -219,6 +229,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 _sectionTitle(l10n.settingsDanger),
+                OutlinedButton.icon(
+                  onPressed: _logout,
+                  icon: const Icon(Icons.logout),
+                  label: Text(l10n.logout),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: _deleteAccount,
                   icon: Icon(Icons.delete_forever, color: Colors.red.shade700),

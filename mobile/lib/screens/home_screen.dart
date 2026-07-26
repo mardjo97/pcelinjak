@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../database/app_database.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
-import '../services/auth_sync.dart';
-import '../services/auto_sync_service.dart';
 import '../services/locale_service.dart';
 import '../services/notification_nav.dart';
 import '../services/push_device_service.dart';
@@ -14,13 +11,11 @@ import '../theme/app_theme.dart';
 import '../widgets/apiary_edit_dialog.dart';
 import '../widgets/sync_warning_banner.dart';
 import 'apiary_screen.dart';
-import 'auth_screen.dart';
 import 'group_screen.dart';
 import 'hive_search_screen.dart';
 import 'reminders_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
-import 'sync_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.api});
@@ -88,31 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _reload();
   }
 
-  Future<void> _exportCodes() async {
-    final l10n = AppLocalizations.of(context);
-    if (_unsynced > 0) {
-      final go = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(l10n.unsyncedTitle),
-          content: Text(l10n.unsyncedExportBody(_unsynced)),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.continueAction)),
-          ],
-        ),
-      );
-      if (go != true) return;
-    }
-    final hives = await db.listAllHives();
-    final buf = StringBuffer('barkod;pcelinjak;rb;tip\n');
-    for (final h in hives) {
-      final a = await db.apiaryByUuid(h.apiaryUuid);
-      buf.writeln('${h.barcode};${a?.name ?? ''};${h.orderNumber};${h.hiveType}');
-    }
-    await SharePlus.instance.share(ShareParams(text: buf.toString(), subject: l10n.barcodeShareSubject));
-  }
-
   Color _parseColor(String hex) {
     try {
       return Color(int.parse(hex.replaceFirst('#', 'FF'), radix: 16));
@@ -144,27 +114,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Expanded(child: Text(l10n.appName, style: AppTheme.brandTitle(size: 34, context: context))),
                     IconButton(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SyncScreen(api: widget.api))).then((_) => _reload()),
-                      icon: const Icon(Icons.cloud_upload_outlined),
-                    ),
-                    PopupMenuButton<String>(
-                      onSelected: (v) async {
-                        if (v == 'settings') {
-                          await Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsScreen(api: widget.api)));
-                        }
-                        if (v == 'export') await _exportCodes();
-                        if (v == 'logout') {
-                          AutoSyncService.instance.stop();
-                          await AuthService(widget.api).logout();
-                          if (!context.mounted) return;
-                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AuthScreen(api: widget.api)));
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(value: 'settings', child: Text(l10n.settings)),
-                        PopupMenuItem(value: 'export', child: Text(l10n.exportBarcodes)),
-                        PopupMenuItem(value: 'logout', child: Text(l10n.logout)),
-                      ],
+                      tooltip: l10n.settings,
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => SettingsScreen(api: widget.api)),
+                      ).then((_) => _reload()),
+                      icon: const Icon(Icons.settings_outlined),
                     ),
                   ],
                 ),
