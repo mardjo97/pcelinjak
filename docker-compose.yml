@@ -1,0 +1,77 @@
+services:
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pcelinjak}
+      MYSQL_USER: ${MYSQL_USER:-pcelinjak}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me-app}
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  db-init:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pcelinjak}
+      MYSQL_USER: ${MYSQL_USER:-pcelinjak}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me-app}
+    entrypoint: >
+      sh -c "
+      i=0;
+      until mysqladmin ping -hmysql -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent; do
+        i=$$((i+1));
+        if [ $$i -gt 30 ]; then echo 'MySQL not ready'; exit 1; fi;
+        echo waiting for mysql...;
+        sleep 2;
+      done;
+      mysql -hmysql -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" -e
+      \"CREATE DATABASE IF NOT EXISTS \\\`$${MYSQL_DATABASE}\\\`;
+      CREATE USER IF NOT EXISTS '$${MYSQL_USER}'@'%' IDENTIFIED BY '$${MYSQL_PASSWORD}';
+      GRANT ALL ON \\\`$${MYSQL_DATABASE}\\\`.* TO '$${MYSQL_USER}'@'%';
+      FLUSH PRIVILEGES;\"
+      "
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: pcelinjak-backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8081}:8080"
+    volumes:
+      - "./logs/${BACKEND_LOG_DIR:-backend}:/app/logs"
+    environment:
+      QUARKUS_HTTP_HOST: 0.0.0.0
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-pcelinjak}?useSSL=false&allowPublicKeyRetrieval=true
+      QUARKUS_DATASOURCE_USERNAME: ${MYSQL_USER:-pcelinjak}
+      QUARKUS_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-change-me-app}
+      PCELINJAK_JWT_SECRET: ${PCELINJAK_JWT_SECRET:-change-me-jwt-secret-min-32-chars-long}
+      PCELINJAK_JWT_EXPIRATION_SECONDS: ${PCELINJAK_JWT_EXPIRATION_SECONDS:-31536000}
+      QUARKUS_MAILER_FROM: ${MAIL_FROM:-noreply@hexatech.rs}
+      QUARKUS_MAILER_HOST: ${MAIL_HOST:-mailcluster.loopia.se}
+      QUARKUS_MAILER_PORT: ${MAIL_PORT:-587}
+      QUARKUS_MAILER_USERNAME: ${MAIL_USERNAME:-noreply@hexatech.rs}
+      QUARKUS_MAILER_PASSWORD: ${MAIL_PASSWORD:-}
+      PCELINJAK_MAIL_BASE_URL: ${PCELINJAK_MAIL_BASE_URL:-http://192.168.8.175:8081}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+
+volumes:
+  mysql_data:
+    name: ${PCELINJAK_MYSQL_VOLUME_NAME:-pcelinjak_mysql_data}
