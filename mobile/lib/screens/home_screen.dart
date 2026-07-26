@@ -114,6 +114,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Expanded(child: Text(l10n.appName, style: AppTheme.brandTitle(size: 34, context: context))),
                     IconButton(
+                      tooltip: l10n.reports,
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => ReportsScreen(api: widget.api)),
+                      ).then((_) => _reload()),
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                    ),
+                    IconButton(
                       tooltip: l10n.settings,
                       onPressed: () => Navigator.push(
                         context,
@@ -142,24 +150,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
                 child: OutlinedButton.icon(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RemindersScreen())).then((_) => _reload()),
                   icon: const Icon(Icons.alarm),
                   label: Text(
                     _pendingReminders == 0 ? l10n.reminders : l10n.remindersCount(_pendingReminders),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
-                child: OutlinedButton.icon(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReportsScreen(api: widget.api))).then((_) => _reload()),
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
-                  label: Text(l10n.reports),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                   ),

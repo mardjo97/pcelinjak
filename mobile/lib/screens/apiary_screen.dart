@@ -192,6 +192,85 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
     await _reload();
   }
 
+  Future<void> _addManyHives() async {
+    String type = hiveTypes.first;
+    final typeOk = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Dodaj više košnica'),
+          content: DropdownButtonFormField<String>(
+            initialValue: type,
+            items: hiveTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+            onChanged: (v) => setLocal(() => type = v ?? type),
+            decoration: const InputDecoration(labelText: 'Tip za sve skenirane'),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Skeniraj')),
+          ],
+        ),
+      ),
+    );
+    if (typeOk != true || !mounted) return;
+
+    final codes = await scanBarcodesContinuous(context, title: 'Skeniraj košnice · $type');
+    if (codes == null || codes.isEmpty || !mounted) return;
+
+    var created = 0;
+    var skipped = 0;
+    var order = await db.nextHiveOrder(widget.apiaryUuid);
+    for (final code in codes) {
+      final existing = await db.findHiveByBarcode(code);
+      if (existing != null) {
+        skipped++;
+        continue;
+      }
+      await db.upsertHive(Hive(
+        uuid: db.newUuid(),
+        barcode: code,
+        orderNumber: order,
+        hiveType: type,
+        apiaryUuid: widget.apiaryUuid,
+        status: 'ACTIVE',
+      ));
+      order++;
+      created++;
+    }
+    await _reload();
+    if (!mounted) return;
+    final msg = skipped == 0
+        ? 'Dodato $created košnica ($type).'
+        : 'Dodato $created · preskočeno $skipped (već postoje).';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  Future<void> _pickAddHiveMode() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text('Jedna košnica'),
+              onTap: () => Navigator.pop(ctx, 'one'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.qr_code_scanner),
+              title: const Text('Više košnica (sken)'),
+              subtitle: const Text('Kontinuirano skeniranje, isti tip'),
+              onTap: () => Navigator.pop(ctx, 'many'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == 'one') await _addHive();
+    if (choice == 'many') await _addManyHives();
+  }
+
   @override
   Widget build(BuildContext context) {
     final a = _apiary;
@@ -207,18 +286,16 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
             onPressed: _editApiary,
           ),
           IconButton(
+            tooltip: 'Dodaj više skeniranjem',
             icon: const Icon(Icons.qr_code_scanner),
-            onPressed: () async {
-              final code = await scanBarcode(context);
-              if (code != null) await _addHive(presetBarcode: code);
-            },
+            onPressed: _addManyHives,
           ),
         ],
       ),
       floatingActionButton: HomeFab.pair(
         primary: FloatingActionButton.extended(
           heroTag: 'add_hive_fab',
-          onPressed: () => _addHive(),
+          onPressed: _pickAddHiveMode,
           icon: const Icon(Icons.add),
           label: const Text('Dodaj košnicu'),
         ),

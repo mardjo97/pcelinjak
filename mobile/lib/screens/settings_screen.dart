@@ -86,43 +86,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _deleteAccount() async {
     final l10n = AppLocalizations.of(context);
-    final passwordCtrl = TextEditingController();
-    final confirmed = await showDialog<bool>(
+    final password = await showDialog<String>(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text(l10n.deleteAccount),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(l10n.deleteAccountConfirm),
-              const SizedBox(height: 16),
-              TextField(
-                controller: passwordCtrl,
-                obscureText: true,
-                autofocus: true,
-                decoration: InputDecoration(labelText: l10n.password),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
-              child: Text(l10n.deleteAccount),
-            ),
-          ],
-        );
-      },
+      builder: (ctx) => _DeleteAccountPasswordDialog(l10n: l10n),
     );
-    if (confirmed != true || !mounted) {
-      passwordCtrl.dispose();
-      return;
-    }
-    final password = passwordCtrl.text;
-    passwordCtrl.dispose();
+    if (password == null || !mounted) return;
     if (password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordRequired)));
       return;
@@ -250,6 +218,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _DeleteAccountPasswordDialog extends StatefulWidget {
+  const _DeleteAccountPasswordDialog({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  State<_DeleteAccountPasswordDialog> createState() => _DeleteAccountPasswordDialogState();
+}
+
+class _DeleteAccountPasswordDialogState extends State<_DeleteAccountPasswordDialog> {
+  final _passwordCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    return AlertDialog(
+      title: Text(l10n.deleteAccount),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.deleteAccountConfirm),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordCtrl,
+            obscureText: true,
+            autofocus: true,
+            decoration: InputDecoration(labelText: l10n.password),
+            onSubmitted: (v) => Navigator.pop(context, v),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _passwordCtrl.text),
+          style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+          child: Text(l10n.deleteAccount),
+        ),
+      ],
     );
   }
 }

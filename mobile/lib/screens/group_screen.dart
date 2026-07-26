@@ -152,13 +152,23 @@ class _GroupScreenState extends State<GroupScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(leading: const Icon(Icons.qr_code_scanner), title: const Text('Skeniraj'), onTap: () => Navigator.pop(ctx, 'scan')),
+            ListTile(leading: const Icon(Icons.qr_code_scanner), title: const Text('Skeniraj jednu'), onTap: () => Navigator.pop(ctx, 'scan')),
+            ListTile(
+              leading: const Icon(Icons.playlist_add),
+              title: const Text('Više košnica (sken)'),
+              subtitle: const Text('Kontinuirano skeniranje'),
+              onTap: () => Navigator.pop(ctx, 'many'),
+            ),
             ListTile(leading: const Icon(Icons.keyboard), title: const Text('Ukucaj kod'), onTap: () => Navigator.pop(ctx, 'type')),
           ],
         ),
       ),
     );
     if (choice == null) return;
+    if (choice == 'many') {
+      await _addManyHives();
+      return;
+    }
     String? code;
     if (choice == 'scan') {
       if (!mounted) return;
@@ -184,38 +194,98 @@ class _GroupScreenState extends State<GroupScreen> {
       );
     }
     if (code == null || code.isEmpty) return;
-    final hive = await db.findHiveByBarcode(code);
-    if (hive == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Košnica nije u bazi')));
-      return;
-    }
-    final statusBlock = HiveStatusRules.blockReasonAddToGroup(hive.status);
-    if (statusBlock != null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(statusBlock)));
-      return;
-    }
-    final group = _group;
-    if (group == null) return;
-    final existing = await db.activeMembershipInGroup(group.uuid, hive.uuid);
-    if (existing != null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Košnica ${hive.barcode} je već aktivna u ovoj grupi. '
-            'Završite ili uklonite trenutni period da je dodate ponovo.',
-          ),
-        ),
-      );
-      return;
-    }
+    final hive = await _resolveHiveForGroup(code);
+    if (hive == null) return;
     await _promptDetailsAndSave(hive);
   }
 
+  Future<void> _addManyHives() async {
+    final codes = await scanBarcodesContinuous(context, title: 'Skeniraj za ${title(context)}');
+    if (codes == null || codes.isEmpty || !mounted) return;
+
+    final hives = <Hive>[];
+    var skipped = 0;
+    for (final code in codes) {
+      final hive = await _resolveHiveForGroup(code, silent: true);
+      if (hive == null) {
+        skipped++;
+        continue;
+      }
+      hives.add(hive);
+    }
+    if (hives.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(skipped == 0 ? 'Nema košnica za dodavanje.' : 'Nijedna košnica nije pogodna ($skipped preskočeno).')),
+      );
+      return;
+    }
+
+    final draft = await _collectGroupAddDetails(
+      summary: hives.length == 1
+          ? 'Košnica ${hives.first.orderNumber} · ${hives.first.barcode}'
+          : '${hives.length} košnica',
+    );
+    if (draft == null) return;
+
+    var added = 0;
+    for (final hive in hives) {
+      final ok = await _commitHiveToGroup(hive, draft);
+      if (ok) {
+        added++;
+      } else {
+        skipped++;
+      }
+    }
+    await _reload();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(skipped == 0 ? 'Dodato $added košnica.' : 'Dodato $added · preskočeno $skipped.')),
+    );
+  }
+
+  /// Vraća košnicu spremnu za grupu, ili null uz snackbar (osim ako [silent]).
+  Future<Hive?> _resolveHiveForGroup(String code, {bool silent = false}) async {
+    final hive = await db.findHiveByBarcode(code);
+    if (hive == null) {
+      if (!silent && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nije u bazi: $code')));
+      }
+      return null;
+    }
+    final statusBlock = HiveStatusRules.blockReasonAddToGroup(hive.status);
+    if (statusBlock != null) {
+      if (!silent && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${hive.barcode}: $statusBlock')));
+      }
+      return null;
+    }
+    final group = _group;
+    if (group == null) return null;
+    final existing = await db.activeMembershipInGroup(group.uuid, hive.uuid);
+    if (existing != null) {
+      if (!silent && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Košnica ${hive.barcode} je već aktivna u ovoj grupi.')),
+        );
+      }
+      return null;
+    }
+    return hive;
+  }
+
   Future<void> _promptDetailsAndSave(Hive hive) async {
-    final group = _group!;
+    final draft = await _collectGroupAddDetails(
+      summary: 'Košnica ${hive.orderNumber} · ${hive.barcode}',
+    );
+    if (draft == null) return;
+    await _commitHiveToGroup(hive, draft);
+    await _reload();
+  }
+
+  Future<_GroupAddDraft?> _collectGroupAddDetails({required String summary}) async {
+    final group = _group;
+    if (group == null) return null;
     String? pasture = group.pastureType ?? pastureTypes.first;
     final locCtrl = TextEditingController(text: group.locationName ?? '');
     final noteCtrl = TextEditingController();
@@ -227,7 +297,7 @@ class _GroupScreenState extends State<GroupScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) {
           final fields = <Widget>[
-            Text('Košnica ${hive.orderNumber} · ${hive.barcode}'),
+            Text(summary),
             if (widget.groupType == 'MOVED' || widget.groupType == 'GOOD_PASTURE')
               DropdownButtonFormField<String>(
                 initialValue: pasture,
@@ -281,52 +351,54 @@ class _GroupScreenState extends State<GroupScreen> {
         },
       ),
     );
-    if (ok != true) return;
+    if (ok != true) return null;
 
-    if (!mounted) return;
-    final groupTitle = title(context);
+    final noteText = noteCtrl.text.trim();
+    final parsedAmount = double.tryParse(amountCtrl.text.replaceAll(',', '.'));
+    final amount = GroupSharedDataSync.usesHarvest(widget.groupType)
+        ? (parsedAmount ?? (widget.groupType == 'MOVED' ? 1.0 : 0.0))
+        : parsedAmount;
+    final location = locCtrl.text.trim().isEmpty ? null : locCtrl.text.trim();
 
-    // Ponovna provera (npr. ako je u međuvremenu dodata sa drugog mesta).
+    return _GroupAddDraft(
+      pasture: pasture,
+      locationName: location,
+      noteText: noteText,
+      amount: amount,
+      checkDate: checkDate,
+      reminderAt: checkDate?.subtract(const Duration(days: 1)),
+    );
+  }
+
+  /// Vraća true ako je košnica uspešno dodata.
+  Future<bool> _commitHiveToGroup(Hive hive, _GroupAddDraft draft) async {
+    final group = _group;
+    if (group == null) return false;
+
     final already = await db.activeMembershipInGroup(group.uuid, hive.uuid);
-    if (already != null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Košnica ${hive.barcode} je već aktivna u ovoj grupi.')),
-      );
-      return;
-    }
+    if (already != null) return false;
 
     if (widget.groupType == 'MOVED') {
-      group.pastureType = pasture;
-      group.locationName = locCtrl.text.trim().isEmpty ? null : locCtrl.text.trim();
+      group.pastureType = draft.pasture;
+      group.locationName = draft.locationName;
       group.touch();
       group.dateSynched = null;
       await db.upsertWorkGroup(group);
     }
 
-    final noteText = noteCtrl.text.trim();
-    DateTime? reminderAt;
-    if (checkDate != null) {
-      reminderAt = checkDate!.subtract(const Duration(days: 1));
-    }
-
-    final parsedAmount = double.tryParse(amountCtrl.text.replaceAll(',', '.'));
-    final amount = GroupSharedDataSync.usesHarvest(widget.groupType)
-        ? (parsedAmount ?? (widget.groupType == 'MOVED' ? 1.0 : 0.0))
-        : parsedAmount;
+    if (!mounted) return false;
+    final groupTitle = title(context);
 
     final item = WorkGroupHive(
       uuid: db.newUuid(),
       groupUuid: group.uuid,
       hiveUuid: hive.uuid,
-      amount: amount,
-      note: noteText.isEmpty ? null : noteText,
-      checkDate: checkDate,
-      reminderAt: reminderAt,
-      pastureType: (widget.groupType == 'MOVED' || widget.groupType == 'GOOD_PASTURE') ? pasture : null,
-      locationName: widget.groupType == 'MOVED'
-          ? (locCtrl.text.trim().isEmpty ? null : locCtrl.text.trim())
-          : null,
+      amount: draft.amount,
+      note: draft.noteText.isEmpty ? null : draft.noteText,
+      checkDate: draft.checkDate,
+      reminderAt: draft.reminderAt,
+      pastureType: (widget.groupType == 'MOVED' || widget.groupType == 'GOOD_PASTURE') ? draft.pasture : null,
+      locationName: widget.groupType == 'MOVED' ? draft.locationName : null,
       membershipStatus: 'ACTIVE',
       activeFrom: DateTime.now(),
     );
@@ -336,41 +408,41 @@ class _GroupScreenState extends State<GroupScreen> {
       await db.upsertHarvest(Harvest(
         uuid: db.newUuid(),
         hiveUuid: hive.uuid,
-        pastureType: pasture ?? 'Drugo',
-        amountKg: amount ?? 0,
+        pastureType: draft.pasture ?? 'Drugo',
+        amountKg: draft.amount ?? 0,
         collectedAt: DateTime.now(),
         harvestYear: DateTime.now().year,
         workGroupHiveUuid: item.uuid,
       ));
     }
 
-    if (noteText.isNotEmpty) {
+    if (draft.noteText.isNotEmpty) {
       await db.upsertNote(Note(
         uuid: db.newUuid(),
         hiveUuid: hive.uuid,
-        content: noteText,
+        content: draft.noteText,
         groupType: widget.groupType,
         groupRecordUuid: item.uuid,
       ));
     }
 
-    if (widget.groupType == 'QUEEN_CHANGE' && checkDate != null) {
-      final q = await db.activeQueen(hive.uuid) ?? Queen(uuid: db.newUuid(), hiveUuid: hive.uuid, activeFrom: checkDate);
-      q.activeFrom = checkDate;
+    if (widget.groupType == 'QUEEN_CHANGE' && draft.checkDate != null) {
+      final q = await db.activeQueen(hive.uuid) ?? Queen(uuid: db.newUuid(), hiveUuid: hive.uuid, activeFrom: draft.checkDate);
+      q.activeFrom = draft.checkDate;
       q.touch();
       q.dateSynched = null;
       await db.upsertQueen(q);
     }
 
-    if (reminderAt != null) {
-      final remTitle = noteText.isEmpty
+    if (draft.reminderAt != null) {
+      final remTitle = draft.noteText.isEmpty
           ? '$groupTitle · ${hive.barcode}'
-          : '$groupTitle · ${hive.barcode}\n$noteText';
+          : '$groupTitle · ${hive.barcode}\n${draft.noteText}';
       final rem = Reminder(
         uuid: db.newUuid(),
         hiveUuid: hive.uuid,
         groupHiveUuid: item.uuid,
-        dueAt: reminderAt,
+        dueAt: draft.reminderAt!,
         title: remTitle,
       );
       await db.upsertReminder(rem);
@@ -378,13 +450,12 @@ class _GroupScreenState extends State<GroupScreen> {
       await ReminderService.instance.schedule(
         id: rem.uuid.hashCode & 0x7fffffff,
         title: ReminderNotificationTitle.forHive(hive, apiary),
-        body: noteText.isEmpty ? 'Podsetnik 1 dan pre provere' : noteText,
-        when: reminderAt,
+        body: draft.noteText.isEmpty ? 'Podsetnik 1 dan pre provere' : draft.noteText,
+        when: draft.reminderAt!,
         reminderUuid: rem.uuid,
       );
     }
-
-    await _reload();
+    return true;
   }
 
   Future<void> _closeMembership(WorkGroupHive item, String status, {bool queenLaid = false}) async {
@@ -838,6 +909,24 @@ class _GroupScreenState extends State<GroupScreen> {
       ),
     );
   }
+}
+
+class _GroupAddDraft {
+  const _GroupAddDraft({
+    required this.pasture,
+    required this.locationName,
+    required this.noteText,
+    required this.amount,
+    required this.checkDate,
+    required this.reminderAt,
+  });
+
+  final String? pasture;
+  final String? locationName;
+  final String noteText;
+  final double? amount;
+  final DateTime? checkDate;
+  final DateTime? reminderAt;
 }
 
 class _FilterChip extends StatelessWidget {

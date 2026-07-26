@@ -85,7 +85,9 @@ Future<bool> editNoteDialog(
                           if (!ctx.mounted) return;
                           final t = await showTimePicker(
                             context: ctx,
-                            initialTime: TimeOfDay.fromDateTime(reminderAt ?? DateTime.now().add(const Duration(hours: 9))),
+                            initialTime: reminderAt != null
+                                ? TimeOfDay.fromDateTime(reminderAt!)
+                                : const TimeOfDay(hour: 9, minute: 0),
                           );
                           final when = DateTime(d.year, d.month, d.day, t?.hour ?? 9, t?.minute ?? 0);
                           setLocal(() => reminderAt = when);
