@@ -8,6 +8,8 @@ import '../services/api_client.dart';
 import '../services/auth_sync.dart';
 import '../services/auto_sync_service.dart';
 import '../services/locale_service.dart';
+import '../services/notification_nav.dart';
+import '../services/push_device_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/apiary_edit_dialog.dart';
 import '../widgets/sync_warning_banner.dart';
@@ -42,6 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _reload();
+    PushDeviceService(widget.api).start();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationNav.flushPending();
+    });
   }
 
   Future<void> _reload() async {
@@ -118,13 +124,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFE8F5EE), AppColors.cream],
+            colors: AppTheme.homeGradient(context),
           ),
         ),
         child: SafeArea(
@@ -135,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
                 child: Row(
                   children: [
-                    Expanded(child: Text(l10n.appName, style: AppTheme.brandTitle(size: 34))),
+                    Expanded(child: Text(l10n.appName, style: AppTheme.brandTitle(size: 34, context: context))),
                     IconButton(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SyncScreen(api: widget.api))).then((_) => _reload()),
                       icon: const Icon(Icons.cloud_upload_outlined),
@@ -166,7 +173,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
                 child: Text(
                   l10n.myApiaryHives(_totalHives),
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: scheme.onSurface,
+                      ),
                 ),
               ),
               Padding(
@@ -187,9 +196,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
-                    foregroundColor: AppColors.meadowDark,
-                    side: const BorderSide(color: AppColors.meadow, width: 1.5),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                 ),
               ),
@@ -201,9 +207,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: Text(l10n.reports),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
-                    foregroundColor: AppColors.meadowDark,
-                    side: const BorderSide(color: AppColors.meadow, width: 1.5),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                   ),
                 ),
               ),
@@ -236,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: Material(
-                                  color: Colors.white,
+                                  color: AppTheme.card(context),
                                   borderRadius: BorderRadius.circular(16),
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(16),
@@ -258,11 +261,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                               children: [
                                                 Text(l10n.apiaryLabel(a.workNumber), style: TextStyle(color: color, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
                                                 Text(a.name, style: Theme.of(context).textTheme.titleLarge),
-                                                if (a.location != null) Text(a.location!),
+                                                if (a.location != null)
+                                                  Text(a.location!, style: TextStyle(color: AppTheme.muted(context))),
                                               ],
                                             ),
                                           ),
-                                          Text('${l10n.total}\n$count', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                          Text(
+                                            '${l10n.total}\n$count',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(fontWeight: FontWeight.w700, color: scheme.onSurface),
+                                          ),
                                           IconButton(
                                             tooltip: l10n.edit,
                                             icon: Icon(Icons.edit_outlined, color: color),
@@ -278,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         }),
                       const SizedBox(height: 24),
-                      Text(l10n.hiveGroups, style: AppTheme.brandTitle(size: 24)),
+                      Text(l10n.hiveGroups, style: AppTheme.brandTitle(context: context, size: 24)),
                       const SizedBox(height: 8),
                       ...workGroupTypes.keys.map((key) {
                         final count = _groupCounts[key] ?? 0;

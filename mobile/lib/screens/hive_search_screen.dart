@@ -125,7 +125,7 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
               q.isEmpty
                   ? 'Sve košnice · filtrirajte po barkodu, imenu/RB pčelinjaka, tipu (LR, DB…), godini matice, poreklu, „markirana“…'
                   : '${_hits.length} rezultat${_hits.length == 1 ? '' : 'a'}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black54),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted(context)),
             ),
           ),
           const SizedBox(height: 8),
@@ -153,13 +153,15 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
                           final a = hit.apiary;
                           final status = hiveStatuses[h.status] ?? h.status;
                           return Material(
-                            color: Colors.white,
+                            color: AppTheme.card(context),
                             borderRadius: BorderRadius.circular(14),
                             child: ListTile(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                               leading: CircleAvatar(
-                                backgroundColor: AppColors.mist,
-                                foregroundColor: AppColors.meadowDark,
+                                backgroundColor: AppTheme.tintedSurface(context, AppColors.mist),
+                                foregroundColor: AppTheme.isDark(context)
+                                    ? Theme.of(context).colorScheme.onSurface
+                                    : AppColors.meadowDark,
                                 child: Text('${h.orderNumber}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                               ),
                               title: Text(

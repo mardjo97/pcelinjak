@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import '../services/auth_sync.dart';
 import '../services/auto_sync_service.dart';
+import '../services/push_device_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/form_spaced_column.dart';
 import '../widgets/language_picker.dart';
@@ -66,6 +67,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
       await auth.login(email: _email.text.trim(), password: _password.text);
       await AutoSyncService.instance.start();
+      await PushDeviceService(widget.api).start();
       if (!mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomeScreen(api: widget.api)));
     } catch (e) {
@@ -85,11 +87,11 @@ class _AuthScreenState extends State<AuthScreen> {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.honeySoft, AppColors.cream, AppColors.mist],
+            colors: AppTheme.authGradient(context),
           ),
         ),
         child: SafeArea(
@@ -103,7 +105,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(l10n.appName, style: AppTheme.brandTitle()),
+              Text(l10n.appName, style: AppTheme.brandTitle(context: context)),
               const SizedBox(height: 8),
               Text(
                 _register ? l10n.authRegisterSubtitle : l10n.authLoginSubtitle,

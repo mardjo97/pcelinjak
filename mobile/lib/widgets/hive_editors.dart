@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../database/app_database.dart';
 import '../models/models.dart';
 import '../services/group_shared_data_sync.dart';
+import '../services/reminder_notification_title.dart';
 import '../services/reminder_service.dart';
 import '../theme/app_theme.dart';
 import 'form_spaced_column.dart';
@@ -120,17 +121,19 @@ Future<bool> editNoteDialog(
   await GroupSharedDataSync().syncFromNote(note);
 
   if (reminderAt != null) {
-    await db.upsertReminder(Reminder(
+    final rem = Reminder(
       uuid: db.newUuid(),
       hiveUuid: hiveUuid,
       dueAt: reminderAt!,
       title: note.content,
-    ));
+    );
+    await db.upsertReminder(rem);
     await ReminderService.instance.schedule(
-      id: note.uuid.hashCode & 0x7fffffff,
-      title: 'Podsetnik — napomena',
+      id: rem.uuid.hashCode & 0x7fffffff,
+      title: await ReminderNotificationTitle.forHiveUuid(hiveUuid),
       body: note.content,
       when: reminderAt!,
+      reminderUuid: rem.uuid,
     );
   }
   return true;
@@ -162,7 +165,7 @@ Future<bool> showNoteDetailsDialog(
                 ].join(' · '),
                 style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: Colors.black54,
+                      color: AppTheme.muted(ctx),
                     ),
               ),
               const SizedBox(height: 12),

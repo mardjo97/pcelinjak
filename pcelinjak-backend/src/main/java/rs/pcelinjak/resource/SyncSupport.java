@@ -1,5 +1,6 @@
 package rs.pcelinjak.resource;
 
+import io.quarkus.hibernate.orm.panache.Panache;
 import rs.pcelinjak.dto.SyncDtos;
 import rs.pcelinjak.entity.SyncEntity;
 
@@ -43,8 +44,17 @@ final class SyncSupport {
         }
         applyFields.accept(entity, item);
         entity.dateDeleted = item.dateDeleted;
-        entity.dateSynched = Instant.now();
+        if (item.dateModified != null) {
+            entity.dateModified = item.dateModified;
+        }
         entity.persist();
+        // Flush da @UpdateTimestamp prvo upiše dateModified, pa tek onda dateSynched.
+        Panache.getEntityManager().flush();
+        Instant synched = Instant.now();
+        if (entity.dateModified != null && synched.isBefore(entity.dateModified)) {
+            synched = entity.dateModified;
+        }
+        entity.dateSynched = synched;
         return entity;
     }
 }

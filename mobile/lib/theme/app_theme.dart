@@ -21,6 +21,31 @@ class AppColors {
 }
 
 class AppTheme {
+  static bool isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
+
+  static Color card(BuildContext context) =>
+      Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface;
+
+  static Color muted(BuildContext context) =>
+      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62);
+
+  /// Soft tinted panel (notes, queen, harvests…) — uses card color in dark mode.
+  static Color tintedSurface(BuildContext context, Color lightTint) =>
+      isDark(context) ? card(context) : lightTint;
+
+  static Color chipLabel(BuildContext context, {required bool selected, required Color accent}) {
+    if (selected) return Colors.white;
+    return isDark(context) ? Theme.of(context).colorScheme.onSurface : accent;
+  }
+
+  static List<Color> homeGradient(BuildContext context) => isDark(context)
+      ? const [Color(0xFF0F1813), Color(0xFF15201A)]
+      : const [Color(0xFFE8F5EE), AppColors.cream];
+
+  static List<Color> authGradient(BuildContext context) => isDark(context)
+      ? const [Color(0xFF1A241C), Color(0xFF15201A), Color(0xFF0F1813)]
+      : const [AppColors.honeySoft, AppColors.cream, AppColors.mist];
+
   static ThemeData light() {
     final base = ThemeData(
       useMaterial3: true,
@@ -54,6 +79,13 @@ class AppTheme {
           textStyle: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 16),
         ),
       ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.meadowDark,
+          side: const BorderSide(color: AppColors.meadow, width: 1.5),
+          textStyle: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
@@ -74,6 +106,7 @@ class AppTheme {
   static ThemeData dark() {
     const surface = Color(0xFF15201A);
     const card = Color(0xFF1E2C24);
+    const onSurface = Color(0xFFE8F0EA);
     final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -82,6 +115,7 @@ class AppTheme {
         primary: const Color(0xFF6FBF8F),
         secondary: AppColors.honey,
         surface: surface,
+        onSurface: onSurface,
         brightness: Brightness.dark,
       ),
       scaffoldBackgroundColor: surface,
@@ -89,7 +123,7 @@ class AppTheme {
 
     return base.copyWith(
       textTheme: GoogleFonts.dmSansTextTheme(base.textTheme).apply(
-        bodyColor: const Color(0xFFE8F0EA),
+        bodyColor: onSurface,
         displayColor: Colors.white,
       ),
       appBarTheme: AppBarTheme(
@@ -104,6 +138,13 @@ class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
+          textStyle: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF6FBF8F),
+          side: const BorderSide(color: Color(0xFF6FBF8F), width: 1.5),
           textStyle: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 16),
         ),
       ),
@@ -123,15 +164,20 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       popupMenuTheme: const PopupMenuThemeData(color: card),
+      iconTheme: const IconThemeData(color: onSurface),
     );
   }
 
-  static TextStyle brandTitle({double size = 40, Color? color}) => GoogleFonts.fraunces(
-        fontSize: size,
-        fontWeight: FontWeight.w700,
-        color: color ?? AppColors.meadowDark,
-        height: 1.05,
-      );
+  static TextStyle brandTitle({double size = 40, Color? color, BuildContext? context}) {
+    final resolved = color ??
+        (context != null && isDark(context) ? const Color(0xFFE8F0EA) : AppColors.meadowDark);
+    return GoogleFonts.fraunces(
+      fontSize: size,
+      fontWeight: FontWeight.w700,
+      color: resolved,
+      height: 1.05,
+    );
+  }
 }
 
 /// International queen marking color by last digit of year.

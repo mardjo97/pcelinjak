@@ -29,6 +29,9 @@ public class User extends PcelinjakEntity {
     @Column(name = "activation_key", length = 20)
     public String activationKey;
 
+    @Column(name = "needs_fcm_refresh", nullable = false)
+    public boolean needsFcmRefresh = false;
+
     public static User findByEmail(String email) {
         return find("email", email).firstResult();
     }

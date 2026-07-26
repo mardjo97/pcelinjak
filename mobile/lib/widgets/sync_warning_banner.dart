@@ -26,8 +26,11 @@ class SyncWarningBanner extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final text = message ?? (count == 1 ? l10n.unsyncedOne : l10n.unsyncedMany(count));
 
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final bg = dark ? const Color(0xFF3D3420) : const Color(0xFFFFF3CD);
+    final fg = dark ? const Color(0xFFF3E2A8) : Colors.orange.shade900;
     return Material(
-      color: const Color(0xFFFFF3CD),
+      color: bg,
       child: InkWell(
         onTap: api == null
             ? null
@@ -41,13 +44,13 @@ class SyncWarningBanner extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: compact ? 8 : 12),
           child: Row(
             children: [
-              Icon(Icons.cloud_off_outlined, color: Colors.orange.shade900, size: compact ? 20 : 22),
+              Icon(Icons.cloud_off_outlined, color: fg, size: compact ? 20 : 22),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   text,
                   style: TextStyle(
-                    color: Colors.orange.shade900,
+                    color: fg,
                     fontWeight: FontWeight.w700,
                     fontSize: compact ? 13 : 14,
                   ),
@@ -57,7 +60,7 @@ class SyncWarningBanner extends StatelessWidget {
                 Text(
                   'Sync',
                   style: TextStyle(
-                    color: AppColors.meadowDark,
+                    color: dark ? const Color(0xFF6FBF8F) : AppColors.meadowDark,
                     fontWeight: FontWeight.w800,
                     fontSize: compact ? 13 : 14,
                   ),

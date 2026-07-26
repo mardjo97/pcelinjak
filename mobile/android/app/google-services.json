@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "141503795680",
+    "project_id": "pcelinjak-79614",
+    "storage_bucket": "pcelinjak-79614.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:141503795680:android:2ae4ce3fb4ef1de4f3db85",
+        "android_client_info": {
+          "package_name": "rs.hexatech.pcelinjak_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD839tUWhIj7ilpJzx9-B5_KuScKcVsuMo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

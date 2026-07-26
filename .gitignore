@@ -25,6 +25,18 @@ mobile/ios/.symlinks/
 .env
 logs/
 *.log
+.backups/
+.backup.env
+deploy/.backup.env
+*.sql
+*.sql.gz
+*.tar.gz
+
+# Deploy secrets (use config.example as template)
+deploy/config
+deploy/config.local
+deploy/config.test
+deploy/config.test.local
 
 # OS / IDE
 .DS_Store

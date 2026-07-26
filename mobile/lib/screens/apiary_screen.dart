@@ -227,7 +227,7 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
       body: Column(
         children: [
           Material(
-            color: AppColors.mist,
+            color: AppTheme.tintedSurface(context, AppColors.mist),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -290,7 +290,7 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   '${visible.length} košnica',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted(context)),
                 ),
               ),
             ),
@@ -419,7 +419,7 @@ class _StatusChip extends StatelessWidget {
         selectedColor: color,
         checkmarkColor: Colors.white,
         labelStyle: TextStyle(
-          color: selected ? Colors.white : color,
+          color: AppTheme.chipLabel(context, selected: selected, accent: color),
           fontWeight: FontWeight.w700,
         ),
         side: BorderSide(color: color),

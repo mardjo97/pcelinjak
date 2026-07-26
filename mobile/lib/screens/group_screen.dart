@@ -8,6 +8,7 @@ import '../models/hive_status_rules.dart';
 import '../models/models.dart';
 import '../services/group_shared_data_sync.dart';
 import '../services/locale_service.dart';
+import '../services/reminder_notification_title.dart';
 import '../services/reminder_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/barcode_scan.dart';
@@ -373,11 +374,13 @@ class _GroupScreenState extends State<GroupScreen> {
         title: remTitle,
       );
       await db.upsertReminder(rem);
+      final apiary = _apiaries[hive.apiaryUuid] ?? await db.apiaryByUuid(hive.apiaryUuid);
       await ReminderService.instance.schedule(
         id: rem.uuid.hashCode & 0x7fffffff,
-        title: '$groupTitle · ${hive.barcode}',
+        title: ReminderNotificationTitle.forHive(hive, apiary),
         body: noteText.isEmpty ? 'Podsetnik 1 dan pre provere' : noteText,
         when: reminderAt,
+        reminderUuid: rem.uuid,
       );
     }
 
@@ -561,7 +564,7 @@ class _GroupScreenState extends State<GroupScreen> {
           children: [
             SizedBox(
               width: 88,
-              child: Text(label, style: TextStyle(fontSize: 12, color: Colors.black.withValues(alpha: 0.55), fontWeight: FontWeight.w600)),
+              child: Text(label, style: TextStyle(fontSize: 12, color: AppTheme.muted(context), fontWeight: FontWeight.w600)),
             ),
             Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
           ],
@@ -861,7 +864,7 @@ class _FilterChip extends StatelessWidget {
         selectedColor: color,
         checkmarkColor: Colors.white,
         labelStyle: TextStyle(
-          color: selected ? Colors.white : color,
+          color: AppTheme.chipLabel(context, selected: selected, accent: color),
           fontWeight: FontWeight.w700,
         ),
         side: BorderSide(color: color),

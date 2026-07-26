@@ -8,6 +8,8 @@ import 'screens/home_screen.dart';
 import 'services/api_client.dart';
 import 'services/auto_sync_service.dart';
 import 'services/locale_service.dart';
+import 'services/notification_nav.dart';
+import 'services/push_device_service.dart';
 import 'services/reminder_service.dart';
 import 'services/theme_service.dart';
 import 'theme/app_theme.dart';
@@ -18,11 +20,13 @@ Future<void> main() async {
   await LocaleController.instance.load();
   await ThemeController.instance.load();
   await ReminderService.instance.init();
+  await PushDeviceService.initFirebase();
   final api = ApiClient();
   AutoSyncService.instance.attach(api);
   final loggedIn = await api.isLoggedIn();
   if (loggedIn) {
     await AutoSyncService.instance.start();
+    await PushDeviceService(api).start();
   }
   runApp(PcelinjakApp(api: api, startHome: loggedIn));
   FlutterNativeSplash.remove();
@@ -44,6 +48,7 @@ class PcelinjakApp extends StatelessWidget {
       builder: (context, _) {
         final locale = LocaleController.instance.locale;
         return MaterialApp(
+          navigatorKey: NotificationNav.navigatorKey,
           onGenerateTitle: (ctx) => AppLocalizations.of(ctx).appName,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light(),

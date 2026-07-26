@@ -477,7 +477,7 @@ class _HiveScreenState extends State<HiveScreen> {
         : Colors.black87;
 
     return Scaffold(
-      backgroundColor: AppColors.mist,
+      backgroundColor: AppTheme.tintedSurface(context, AppColors.mist),
       appBar: AppBar(
         title: Text(title),
         actions: [
@@ -565,7 +565,7 @@ class _HiveScreenState extends State<HiveScreen> {
                     children: [
                       Text(
                         'Poslednja napomena',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black.withValues(alpha: 0.5)),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.muted(context)),
                       ),
                       _latestNoteTile(_notes.first),
                       if (_notes.length > 1)
@@ -755,8 +755,9 @@ class _HiveBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bg = AppTheme.tintedSurface(context, color);
     return Material(
-      color: color,
+      color: bg,
       elevation: 1,
       shadowColor: Colors.black26,
       borderRadius: BorderRadius.circular(18),
@@ -774,7 +775,7 @@ class _HiveBlock extends StatelessWidget {
                     title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                   ),
                 ),

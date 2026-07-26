@@ -1,5 +1,6 @@
 package rs.pcelinjak.resource;
 
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import rs.pcelinjak.dto.SyncDtos;
 import rs.pcelinjak.entity.Reminder;
+import rs.pcelinjak.notification.ReminderPushService;
 
 import java.util.List;
 
@@ -19,6 +21,9 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ReminderResource {
+
+    @Inject
+    ReminderPushService reminderPushService;
 
     @GET
     @Path("/all")
@@ -42,6 +47,7 @@ public class ReminderResource {
                     r.title = d.title;
                     r.completed = d.completed;
                 });
+                reminderPushService.syncReminder(e);
                 res.items.add(toDto(e));
             }
         }

@@ -24,7 +24,12 @@ class LanguagePicker extends StatelessWidget {
             child: DropdownButton<String>(
               value: value,
               borderRadius: BorderRadius.circular(12),
-              icon: const Icon(Icons.language, color: AppColors.meadowDark),
+              icon: Icon(
+                Icons.language,
+                color: AppTheme.isDark(context)
+                    ? Theme.of(context).colorScheme.onSurface
+                    : AppColors.meadowDark,
+              ),
               items: [
                 for (final code in const ['system', 'sr', 'en', 'hr', 'bs', 'cnr'])
                   DropdownMenuItem(

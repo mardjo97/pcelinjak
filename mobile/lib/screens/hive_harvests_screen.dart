@@ -135,7 +135,11 @@ class _HiveHarvestsScreenState extends State<HiveHarvestsScreen> {
                             selectedColor: const Color(0xFF2B6CB0),
                             checkmarkColor: Colors.white,
                             labelStyle: TextStyle(
-                              color: _pastureFilter == null ? Colors.white : const Color(0xFF2B6CB0),
+                              color: AppTheme.chipLabel(
+                                context,
+                                selected: _pastureFilter == null,
+                                accent: const Color(0xFF2B6CB0),
+                              ),
                               fontWeight: FontWeight.w700,
                             ),
                             onSelected: (_) => setState(() => _pastureFilter = null),
@@ -153,7 +157,11 @@ class _HiveHarvestsScreenState extends State<HiveHarvestsScreen> {
                                 selectedColor: const Color(0xFF2B6CB0),
                                 checkmarkColor: Colors.white,
                                 labelStyle: TextStyle(
-                                  color: _pastureFilter == type ? Colors.white : const Color(0xFF2B6CB0),
+                                  color: AppTheme.chipLabel(
+                                    context,
+                                    selected: _pastureFilter == type,
+                                    accent: const Color(0xFF2B6CB0),
+                                  ),
                                   fontWeight: FontWeight.w700,
                                 ),
                                 onSelected: (_) => setState(() => _pastureFilter = type),
@@ -182,7 +190,7 @@ class _HiveHarvestsScreenState extends State<HiveHarvestsScreen> {
                               itemBuilder: (context, i) {
                                 final h = visible[i];
                                 return Material(
-                                  color: Colors.white,
+                                  color: AppTheme.card(context),
                                   borderRadius: BorderRadius.circular(14),
                                   child: ListTile(
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

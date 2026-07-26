@@ -97,6 +97,15 @@ class ApiClient {
     return _decode(res);
   }
 
+  Future<dynamic> put(String path, Object? body, {bool auth = true}) async {
+    final res = await http.put(
+      Uri.parse('${await baseUrl()}$path'),
+      headers: await _headers(auth: auth),
+      body: body == null ? null : jsonEncode(body),
+    );
+    return _decode(res);
+  }
+
   dynamic _decode(http.Response res) {
     final text = res.body.isEmpty ? '{}' : res.body;
     dynamic json;

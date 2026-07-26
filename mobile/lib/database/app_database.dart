@@ -444,6 +444,18 @@ class AppDatabase {
     return WorkGroupHive.fromMap(rows.first);
   }
 
+  Future<WorkGroup?> workGroupByUuid(String uuid) async {
+    final rows = await (await db).query('work_group', where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    if (rows.isEmpty) return null;
+    return WorkGroup.fromMap(rows.first);
+  }
+
+  Future<Reminder?> reminderByUuid(String uuid) async {
+    final rows = await (await db).query('reminder', where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    if (rows.isEmpty) return null;
+    return Reminder.fromMap(rows.first);
+  }
+
   Future<List<Note>> notesForGroupRecord(String groupRecordUuid) async {
     final rows = await (await db).query(
       'note',
@@ -569,7 +581,22 @@ class AppDatabase {
   }
 
   Future<List<Map<String, dynamic>>> dirty(String table) async {
-    return (await db).query(table, where: 'dateSynched IS NULL OR dateModified > dateSynched');
+    final rows = await (await db).query(table);
+    return rows.where(_rowNeedsSync).toList();
+  }
+
+  /// Zapis čeka sync ako nikad nije poslat, ili je menjan posle poslednjeg sync-a.
+  static bool _rowNeedsSync(Map<String, dynamic> row) {
+    final synched = _parseDt(row['dateSynched']);
+    if (synched == null) return true;
+    final modified = _parseDt(row['dateModified']);
+    if (modified == null) return false;
+    return modified.isAfter(synched);
+  }
+
+  static DateTime? _parseDt(Object? v) {
+    if (v == null) return null;
+    return DateTime.tryParse('$v')?.toUtc();
   }
 
   static const syncTables = [
@@ -593,14 +620,29 @@ class AppDatabase {
   }
 
   Future<void> markSynched(String table, String uuid, DateTime when) async {
-    await (await db).update(table, {'dateSynched': when.toUtc().toIso8601String()}, where: 'uuid = ?', whereArgs: [uuid]);
+    final database = await db;
+    final rows = await database.query(table, columns: ['dateModified'], where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    var synched = when.toUtc();
+    if (rows.isNotEmpty) {
+      final mod = _parseDt(rows.first['dateModified']);
+      if (mod != null && mod.isAfter(synched)) synched = mod;
+    }
+    await database.update(table, {'dateSynched': synched.toIso8601String()}, where: 'uuid = ?', whereArgs: [uuid]);
   }
 
+  /// Zamenjuje tabelu podacima sa servera. Pull = već sinhronizovano.
   Future<void> replaceAll(String table, List<Map<String, dynamic>> rows) async {
     final database = await db;
     await database.delete(table);
+    final pulledAt = DateTime.now().toUtc();
     for (final row in rows) {
-      await database.insert(table, row, conflictAlgorithm: ConflictAlgorithm.replace);
+      final r = Map<String, dynamic>.from(row);
+      final mod = _parseDt(r['dateModified']);
+      // Snapshot sa servera je izvor istine — ne sme ostati „dirty“.
+      var synched = pulledAt;
+      if (mod != null && mod.isAfter(synched)) synched = mod;
+      r['dateSynched'] = synched.toIso8601String();
+      await database.insert(table, r, conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
 

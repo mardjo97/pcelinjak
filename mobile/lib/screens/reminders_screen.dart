@@ -3,13 +3,17 @@ import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
 import '../models/models.dart';
+import '../services/reminder_notification_title.dart';
 import '../services/reminder_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/home_fab.dart';
-import 'hive_screen.dart';
+import 'reminder_detail_screen.dart';
 
 class RemindersScreen extends StatefulWidget {
-  const RemindersScreen({super.key});
+  const RemindersScreen({super.key, this.initialReminderUuid});
+
+  /// Ako je setovan, odmah otvara detalj (npr. iz notifikacije).
+  final String? initialReminderUuid;
 
   @override
   State<RemindersScreen> createState() => _RemindersScreenState();
@@ -28,7 +32,15 @@ class _RemindersScreenState extends State<RemindersScreen> {
   @override
   void initState() {
     super.initState();
-    _reload();
+    _reload().then((_) {
+      final uuid = widget.initialReminderUuid;
+      if (uuid != null && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ReminderDetailScreen(reminderUuid: uuid)),
+        );
+      }
+    });
   }
 
   DateTime get _todayStart {
@@ -92,12 +104,12 @@ class _RemindersScreenState extends State<RemindersScreen> {
     r.dateModified = DateTime.now();
     r.dateSynched = null;
     await db.upsertReminder(r);
-    final hive = r.hiveUuid != null ? _hives[r.hiveUuid!] : null;
     await ReminderService.instance.schedule(
       id: r.uuid.hashCode & 0x7fffffff,
-      title: hive != null ? 'Podsetnik · ${hive.barcode}' : 'Podsetnik',
+      title: await ReminderNotificationTitle.forHiveUuid(r.hiveUuid),
       body: r.title,
       when: r.dueAt,
+      reminderUuid: r.uuid,
     );
     if (!mounted) return;
     setState(() => _showHistory = false);
@@ -108,10 +120,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
     );
   }
 
-  Future<void> _openHive(Reminder r) async {
-    final hiveUuid = r.hiveUuid;
-    if (hiveUuid == null) return;
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => HiveScreen(hiveUuid: hiveUuid)));
+  Future<void> _openDetail(Reminder r) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ReminderDetailScreen(reminderUuid: r.uuid)),
+    );
     _reload();
   }
 
@@ -161,12 +174,13 @@ class _RemindersScreenState extends State<RemindersScreen> {
       itemBuilder: (context, i) {
         final r = visible[i];
         final overdue = _isOverdue(r);
+        final onSurface = Theme.of(context).colorScheme.onSurface;
         return Material(
-          color: Colors.white,
+          color: AppTheme.card(context),
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: r.hiveUuid != null ? () => _openHive(r) : null,
+            onTap: () => _openDetail(r),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
               child: Row(
@@ -174,9 +188,14 @@ class _RemindersScreenState extends State<RemindersScreen> {
                 children: [
                   CircleAvatar(
                     backgroundColor: overdue
-                        ? Colors.red.shade100
-                        : (r.completed ? AppColors.mist : AppColors.honeySoft),
-                    foregroundColor: overdue ? Colors.red.shade800 : AppColors.meadowDark,
+                        ? (AppTheme.isDark(context) ? Colors.red.shade900 : Colors.red.shade100)
+                        : AppTheme.tintedSurface(
+                            context,
+                            r.completed ? AppColors.mist : AppColors.honeySoft,
+                          ),
+                    foregroundColor: overdue
+                        ? (AppTheme.isDark(context) ? Colors.red.shade200 : Colors.red.shade800)
+                        : (AppTheme.isDark(context) ? onSurface : AppColors.meadowDark),
                     child: Icon(r.completed ? Icons.check : Icons.alarm),
                   ),
                   const SizedBox(width: 12),
@@ -189,7 +208,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: overdue ? Colors.red.shade700 : Colors.black54,
+                            color: overdue
+                                ? (AppTheme.isDark(context) ? Colors.red.shade300 : Colors.red.shade700)
+                                : AppTheme.muted(context),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -200,7 +221,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                             fontWeight: FontWeight.w600,
                             height: 1.35,
                             decoration: r.completed ? TextDecoration.lineThrough : null,
-                            color: r.completed ? Colors.black54 : AppColors.ink,
+                            color: r.completed ? AppTheme.muted(context) : onSurface,
                           ),
                         ),
                       ],
@@ -218,7 +239,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                       icon: const Icon(Icons.undo),
                       onPressed: () => _reactivate(r),
                     )
-                  else if (r.hiveUuid != null)
+                  else
                     const Padding(
                       padding: EdgeInsets.only(top: 8, right: 8),
                       child: Icon(Icons.chevron_right),
@@ -263,7 +284,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   selectedColor: AppColors.meadow,
                   checkmarkColor: Colors.white,
                   labelStyle: TextStyle(
-                    color: _dayFilter == 'today' ? Colors.white : AppColors.meadowDark,
+                    color: AppTheme.chipLabel(
+                      context,
+                      selected: _dayFilter == 'today',
+                      accent: AppColors.meadowDark,
+                    ),
                     fontWeight: FontWeight.w700,
                   ),
                   onSelected: (_) => _toggleDayFilter('today'),
@@ -275,7 +300,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   selectedColor: AppColors.meadow,
                   checkmarkColor: Colors.white,
                   labelStyle: TextStyle(
-                    color: _dayFilter == 'tomorrow' ? Colors.white : AppColors.meadowDark,
+                    color: AppTheme.chipLabel(
+                      context,
+                      selected: _dayFilter == 'tomorrow',
+                      accent: AppColors.meadowDark,
+                    ),
                     fontWeight: FontWeight.w700,
                   ),
                   onSelected: (_) => _toggleDayFilter('tomorrow'),

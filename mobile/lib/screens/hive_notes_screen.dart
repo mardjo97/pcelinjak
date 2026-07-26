@@ -85,7 +85,7 @@ class _HiveNotesScreenState extends State<HiveNotesScreen> {
                   itemBuilder: (context, i) {
                     final n = _notes[i];
                     return Material(
-                      color: Colors.white,
+                      color: AppTheme.card(context),
                       borderRadius: BorderRadius.circular(14),
                       child: ListTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

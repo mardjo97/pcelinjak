@@ -173,8 +173,9 @@ class _ReportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Material(
-      color: Colors.white,
+      color: AppTheme.card(context),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -187,15 +188,22 @@ class _ReportCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.ios_share_outlined, color: AppColors.meadowDark, size: 32),
+              Icon(
+                Icons.ios_share_outlined,
+                color: AppTheme.isDark(context) ? onSurface : AppColors.meadowDark,
+                size: 32,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(type.title(l10n), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    Text(
+                      type.title(l10n),
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: onSurface),
+                    ),
                     const SizedBox(height: 4),
-                    Text(type.subtitle(l10n), style: TextStyle(color: Colors.black.withValues(alpha: 0.55))),
+                    Text(type.subtitle(l10n), style: TextStyle(color: AppTheme.muted(context))),
                   ],
                 ),
               ),

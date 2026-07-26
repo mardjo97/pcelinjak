@@ -101,9 +101,20 @@ class SyncService {
     final res = await api.post(path, payload) as Map<String, dynamic>;
     final items = (res['items'] as List?) ?? [];
     final now = DateTime.now();
+    final marked = <String>{};
     for (final item in items) {
       final uuid = (item as Map)['uuid'] as String?;
-      if (uuid != null) await db.markSynched(table, uuid, now);
+      if (uuid != null) {
+        await db.markSynched(table, uuid, now);
+        marked.add(uuid);
+      }
+    }
+    // Ako server ne vrati items, i dalje označi sve što smo uspešno poslali.
+    for (final row in dirty) {
+      final uuid = row['uuid'] as String?;
+      if (uuid != null && !marked.contains(uuid)) {
+        await db.markSynched(table, uuid, now);
+      }
     }
     return dirty.length;
   }

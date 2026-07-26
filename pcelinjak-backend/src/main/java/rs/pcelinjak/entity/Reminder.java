@@ -25,6 +25,10 @@ public class Reminder extends SyncEntity {
     @Column(nullable = false)
     public boolean completed = false;
 
+    /** ID notifikacije u shared notification-service (za cancel/reschedule). */
+    @Column(name = "notification_id", length = 64)
+    public String notificationId;
+
     public static Reminder findByUuid(String uuid) {
         return find("uuid", uuid).firstResult();
     }
