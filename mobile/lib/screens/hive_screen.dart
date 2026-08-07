@@ -10,12 +10,14 @@ import '../widgets/form_spaced_column.dart';
 import '../widgets/hive_editors.dart';
 import '../widgets/home_fab.dart';
 import 'hive_harvests_screen.dart';
+import 'hive_inspections_screen.dart';
 import 'hive_notes_screen.dart';
 
 class HiveScreen extends StatefulWidget {
-  const HiveScreen({super.key, required this.hiveUuid});
+  const HiveScreen({super.key, required this.hiveUuid, this.contextHiveUuids});
 
   final String hiveUuid;
+  final List<String>? contextHiveUuids;
 
   @override
   State<HiveScreen> createState() => _HiveScreenState();
@@ -23,12 +25,16 @@ class HiveScreen extends StatefulWidget {
 
 class _HiveScreenState extends State<HiveScreen> {
   final db = AppDatabase.instance;
+  late String _currentHiveUuid;
   Hive? _hive;
   Apiary? _apiary;
+  WorkGroupHive? _activeMovedMembership;
   Queen? _queen;
   List<Queen> _queenHistory = [];
   List<Note> _notes = [];
   List<Harvest> _harvests = [];
+  List<Inspection> _inspections = [];
+  Inspection? _latestInspection;
   double _yearSum = 0;
   bool _loading = true;
   String? _error;
@@ -36,7 +42,27 @@ class _HiveScreenState extends State<HiveScreen> {
   @override
   void initState() {
     super.initState();
+    _currentHiveUuid = widget.hiveUuid;
     _reload();
+  }
+
+  int get _contextIndex =>
+      widget.contextHiveUuids?.indexOf(_currentHiveUuid) ?? -1;
+
+  bool get _hasPrev => _contextIndex > 0;
+
+  bool get _hasNext =>
+      _contextIndex >= 0 &&
+      widget.contextHiveUuids != null &&
+      _contextIndex < widget.contextHiveUuids!.length - 1;
+
+  Future<void> _goToContextOffset(int offset) async {
+    final contextUuids = widget.contextHiveUuids;
+    if (contextUuids == null) return;
+    final nextIndex = _contextIndex + offset;
+    if (nextIndex < 0 || nextIndex >= contextUuids.length) return;
+    setState(() => _currentHiveUuid = contextUuids[nextIndex]);
+    await _reload();
   }
 
   Future<void> _reload() async {
@@ -45,7 +71,7 @@ class _HiveScreenState extends State<HiveScreen> {
       _error = null;
     });
     try {
-      final hive = await db.findHiveByUuid(widget.hiveUuid);
+      final hive = await db.findHiveByUuid(_currentHiveUuid);
       if (hive == null || hive.dateDeleted != null) {
         if (!mounted) return;
         setState(() {
@@ -56,9 +82,11 @@ class _HiveScreenState extends State<HiveScreen> {
         return;
       }
       final apiary = await db.apiaryByUuid(hive.apiaryUuid);
+      final movedMembership = await db.activeMovedMembershipForHive(hive.uuid);
       final queen = await db.activeQueen(hive.uuid);
       final queens = await db.listQueens(hive.uuid);
       final notes = await db.notesForHive(hive.uuid);
+      final inspections = await db.inspectionsForHive(hive.uuid);
       final year = DateTime.now().year;
       final harvests = await db.harvestsForHive(hive.uuid, year: year);
       final sum = await db.harvestSum(hive.uuid, year);
@@ -66,9 +94,12 @@ class _HiveScreenState extends State<HiveScreen> {
       setState(() {
         _hive = hive;
         _apiary = apiary;
+        _activeMovedMembership = movedMembership;
         _queen = queen;
         _queenHistory = queens.where((q) => !q.active).toList();
         _notes = notes;
+        _inspections = inspections;
+        _latestInspection = inspections.isEmpty ? null : inspections.first;
         _harvests = harvests;
         _yearSum = sum;
         _loading = false;
@@ -82,14 +113,17 @@ class _HiveScreenState extends State<HiveScreen> {
     }
   }
 
-  Future<bool> _confirm(String title, String message) => confirmDialog(context, title, message);
+  Future<bool> _confirm(String title, String message) =>
+      confirmDialog(context, title, message);
 
   Future<void> _editHive() async {
     final hive = _hive!;
     final blocked = HiveStatusRules.blockReasonEditHive(hive.status);
     if (blocked != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(blocked)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(blocked)));
       return;
     }
     final barcodeCtrl = TextEditingController(text: hive.barcode);
@@ -122,16 +156,28 @@ class _HiveScreenState extends State<HiveScreen> {
               ),
               DropdownButtonFormField<String>(
                 initialValue: hiveTypes.contains(type) ? type : hiveTypes.last,
-                items: hiveTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                items: hiveTypes
+                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                    .toList(),
                 onChanged: (v) => setLocal(() => type = v ?? type),
                 decoration: const InputDecoration(labelText: 'Tip'),
               ),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Opis'), maxLines: 2),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: 'Opis'),
+                maxLines: 2,
+              ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sačuvaj')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Otkaži'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Sačuvaj'),
+            ),
           ],
         ),
       ),
@@ -139,7 +185,9 @@ class _HiveScreenState extends State<HiveScreen> {
     if (ok != true || barcodeCtrl.text.trim().isEmpty) return;
     hive.barcode = barcodeCtrl.text.trim();
     hive.hiveType = type;
-    hive.description = descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim();
+    hive.description = descCtrl.text.trim().isEmpty
+        ? null
+        : descCtrl.text.trim();
     hive.touch();
     hive.dateSynched = null;
     await db.upsertHive(hive);
@@ -161,7 +209,8 @@ class _HiveScreenState extends State<HiveScreen> {
       return;
     }
     final label = HiveStatusRules.label(status);
-    if (!await _confirm('Status košnice', 'Postaviti status na „$label”?')) return;
+    if (!await _confirm('Status košnice', 'Postaviti status na „$label”?'))
+      return;
     hive.status = status;
     hive.touch();
     hive.dateSynched = null;
@@ -170,8 +219,12 @@ class _HiveScreenState extends State<HiveScreen> {
   }
 
   Future<void> _deleteHive() async {
-    if (!await _confirm('Obriši košnicu', 'Košnica će biti obrisana (može se sinhronizovati kao obrisana).')) return;
-    await db.softDelete('hive', widget.hiveUuid);
+    if (!await _confirm(
+      'Obriši košnicu',
+      'Košnica će biti obrisana (može se sinhronizovati kao obrisana).',
+    ))
+      return;
+    await db.softDelete('hive', _currentHiveUuid);
     if (!mounted) return;
     Navigator.pop(context);
   }
@@ -180,11 +233,15 @@ class _HiveScreenState extends State<HiveScreen> {
     final blocked = HiveStatusRules.blockReasonQueen(_hive?.status);
     if (blocked != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(blocked)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(blocked)));
       return;
     }
     final q0 = existing ?? _queen;
-    final yearCtrl = TextEditingController(text: '${q0?.queenYear ?? DateTime.now().year}');
+    final yearCtrl = TextEditingController(
+      text: '${q0?.queenYear ?? DateTime.now().year}',
+    );
     final originCtrl = TextEditingController(text: q0?.origin ?? '');
     var marked = q0?.marked ?? false;
     final ok = await showDialog<bool>(
@@ -195,8 +252,15 @@ class _HiveScreenState extends State<HiveScreen> {
           content: SingleChildScrollView(
             child: FormSpacedColumn(
               children: [
-                TextField(controller: yearCtrl, decoration: const InputDecoration(labelText: 'Godina'), keyboardType: TextInputType.number),
-                TextField(controller: originCtrl, decoration: const InputDecoration(labelText: 'Poreklo')),
+                TextField(
+                  controller: yearCtrl,
+                  decoration: const InputDecoration(labelText: 'Godina'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: originCtrl,
+                  decoration: const InputDecoration(labelText: 'Poreklo'),
+                ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Obeležena'),
@@ -207,15 +271,22 @@ class _HiveScreenState extends State<HiveScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sačuvaj')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Otkaži'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Sačuvaj'),
+            ),
           ],
         ),
       ),
     );
     if (ok != true) return;
     final year = int.tryParse(yearCtrl.text.trim());
-    final q = q0 ??
+    final q =
+        q0 ??
         Queen(
           uuid: db.newUuid(),
           hiveUuid: widget.hiveUuid,
@@ -237,7 +308,9 @@ class _HiveScreenState extends State<HiveScreen> {
     final blocked = HiveStatusRules.blockReasonQueen(_hive?.status);
     if (blocked != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(blocked)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(blocked)));
       return;
     }
     final current = _queen;
@@ -257,10 +330,15 @@ class _HiveScreenState extends State<HiveScreen> {
               DropdownButtonFormField<String>(
                 initialValue: endReason,
                 items: queenEndReasons.entries
-                    .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                    .map(
+                      (e) =>
+                          DropdownMenuItem(value: e.key, child: Text(e.value)),
+                    )
                     .toList(),
                 onChanged: (v) => setLocal(() => endReason = v ?? endReason),
-                decoration: const InputDecoration(labelText: 'Šta se desilo sa starom?'),
+                decoration: const InputDecoration(
+                  labelText: 'Šta se desilo sa starom?',
+                ),
               ),
               if (addNew)
                 Text(
@@ -270,8 +348,14 @@ class _HiveScreenState extends State<HiveScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(addNew ? 'Nastavi' : 'Završi')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Otkaži'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(addNew ? 'Nastavi' : 'Završi'),
+            ),
           ],
         ),
       ),
@@ -298,7 +382,9 @@ class _HiveScreenState extends State<HiveScreen> {
     final blocked = HiveStatusRules.blockReasonQueen(_hive?.status);
     if (blocked != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(blocked)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(blocked)));
       return;
     }
     final yearCtrl = TextEditingController(text: '${DateTime.now().year}');
@@ -312,8 +398,15 @@ class _HiveScreenState extends State<HiveScreen> {
           content: SingleChildScrollView(
             child: FormSpacedColumn(
               children: [
-                TextField(controller: yearCtrl, decoration: const InputDecoration(labelText: 'Godina'), keyboardType: TextInputType.number),
-                TextField(controller: originCtrl, decoration: const InputDecoration(labelText: 'Poreklo')),
+                TextField(
+                  controller: yearCtrl,
+                  decoration: const InputDecoration(labelText: 'Godina'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: originCtrl,
+                  decoration: const InputDecoration(labelText: 'Poreklo'),
+                ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Obeležena'),
@@ -324,8 +417,14 @@ class _HiveScreenState extends State<HiveScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sačuvaj')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Otkaži'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Sačuvaj'),
+            ),
           ],
         ),
       ),
@@ -345,7 +444,11 @@ class _HiveScreenState extends State<HiveScreen> {
   }
 
   Future<void> _editNote({Note? existing}) async {
-    final saved = await editNoteDialog(context, hiveUuid: widget.hiveUuid, existing: existing);
+    final saved = await editNoteDialog(
+      context,
+      hiveUuid: widget.hiveUuid,
+      existing: existing,
+    );
     if (saved) await _reload();
   }
 
@@ -360,10 +463,25 @@ class _HiveScreenState extends State<HiveScreen> {
     final blocked = HiveStatusRules.blockReasonHarvest(_hive?.status);
     if (blocked != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(blocked)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(blocked)));
       return;
     }
-    final saved = await editHarvestDialog(context, hiveUuid: widget.hiveUuid, existing: existing);
+    final saved = await editHarvestDialog(
+      context,
+      hiveUuid: widget.hiveUuid,
+      existing: existing,
+    );
+    if (saved) await _reload();
+  }
+
+  Future<void> _editInspection({Inspection? existing}) async {
+    final saved = await editInspectionDialog(
+      context,
+      hiveUuid: widget.hiveUuid,
+      existing: existing,
+    );
     if (saved) await _reload();
   }
 
@@ -395,6 +513,20 @@ class _HiveScreenState extends State<HiveScreen> {
     _reload();
   }
 
+  Future<void> _openInspectionsPage() async {
+    final hive = _hive;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HiveInspectionsScreen(
+          hiveUuid: widget.hiveUuid,
+          hiveLabel: hive?.barcode,
+        ),
+      ),
+    );
+    _reload();
+  }
+
   Color _statusColor(String status) {
     switch (status) {
       case 'ARCHIVED':
@@ -418,11 +550,13 @@ class _HiveScreenState extends State<HiveScreen> {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: Text([
-        n.dateCreated.toLocal().toString().split('.').first,
-        if (n.reminderAt != null)
-          'Podsetnik: ${n.reminderAt!.toLocal().toString().split('.').first}',
-      ].join(' · ')),
+      subtitle: Text(
+        [
+          n.dateCreated.toLocal().toString().split('.').first,
+          if (n.reminderAt != null)
+            'Podsetnik: ${n.reminderAt!.toLocal().toString().split('.').first}',
+        ].join(' · '),
+      ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () async {
         await showNoteDetailsDialog(
@@ -455,9 +589,15 @@ class _HiveScreenState extends State<HiveScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(_error ?? 'Košnica nije pronađena.', textAlign: TextAlign.center),
+                Text(
+                  _error ?? 'Košnica nije pronađena.',
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 16),
-                FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Nazad')),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Nazad'),
+                ),
               ],
             ),
           ),
@@ -472,6 +612,7 @@ class _HiveScreenState extends State<HiveScreen> {
     final canHarvest = HiveStatusRules.canAddHarvest(status);
     final canEdit = HiveStatusRules.canEditHive(status);
     final title = '${_apiary?.name ?? 'Pčelinjak'} · ${hive.orderNumber}';
+    final movedMembership = _activeMovedMembership;
     final discColor = (_queen?.marked == true && _queen?.queenYear != null)
         ? queenMarkColor(_queen!.queenYear!)
         : Colors.black87;
@@ -481,6 +622,18 @@ class _HiveScreenState extends State<HiveScreen> {
       appBar: AppBar(
         title: Text(title),
         actions: [
+          if (widget.contextHiveUuids != null) ...[
+            IconButton(
+              tooltip: 'Prethodna košnica',
+              onPressed: _hasPrev ? () => _goToContextOffset(-1) : null,
+              icon: const Icon(Icons.chevron_left),
+            ),
+            IconButton(
+              tooltip: 'Sledeća košnica',
+              onPressed: _hasNext ? () => _goToContextOffset(1) : null,
+              icon: const Icon(Icons.chevron_right),
+            ),
+          ],
           PopupMenuButton<String>(
             onSelected: (v) async {
               switch (v) {
@@ -498,7 +651,9 @@ class _HiveScreenState extends State<HiveScreen> {
               PopupMenuItem(
                 value: 'edit',
                 enabled: canEdit,
-                child: Text(canEdit ? 'Izmeni košnicu' : 'Izmeni (nije dozvoljeno)'),
+                child: Text(
+                  canEdit ? 'Izmeni košnicu' : 'Izmeni (nije dozvoljeno)',
+                ),
               ),
               const PopupMenuDivider(),
               PopupMenuItem(
@@ -515,7 +670,10 @@ class _HiveScreenState extends State<HiveScreen> {
               const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'delete',
-                child: Text('Obriši košnicu', style: TextStyle(color: Colors.red)),
+                child: Text(
+                  'Obriši košnicu',
+                  style: TextStyle(color: Colors.red),
+                ),
               ),
             ],
           ),
@@ -533,12 +691,22 @@ class _HiveScreenState extends State<HiveScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _statusColor(hive.status),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(statusLabel, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                  child: Text(
+                    statusLabel,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -550,6 +718,72 @@ class _HiveScreenState extends State<HiveScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
+          _HiveBlock(
+            color: const Color(0xFFEAF4FF),
+            accent: const Color(0xFF2B6CB0),
+            icon: Icons.place_outlined,
+            title: 'Lokacija',
+            actionLabel: 'Osveži',
+            onAction: _reload,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Bazni pčelinjak',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.muted(context),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _apiary == null
+                      ? 'Nepoznat pčelinjak'
+                      : 'Pčelinjak ${_apiary!.workNumber} · ${_apiary!.name}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                if ((_apiary?.location ?? '').trim().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(_apiary!.location!.trim()),
+                  ),
+                if (movedMembership != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Trenutno seljena',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.muted(context),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if ((movedMembership.locationName ?? '').trim().isNotEmpty)
+                    Text(
+                      movedMembership.locationName!.trim(),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  if ((movedMembership.pastureType ?? '').trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Paša: ${movedMembership.pastureType!.trim()}',
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      movedMembership.periodLabel,
+                      style: TextStyle(color: AppTheme.muted(context)),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
           // NAPOMENA
           _HiveBlock(
             color: const Color(0xFFEDF7F0),
@@ -565,7 +799,11 @@ class _HiveScreenState extends State<HiveScreen> {
                     children: [
                       Text(
                         'Poslednja napomena',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.muted(context)),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.muted(context),
+                        ),
                       ),
                       _latestNoteTile(_notes.first),
                       if (_notes.length > 1)
@@ -573,6 +811,65 @@ class _HiveScreenState extends State<HiveScreen> {
                           onPressed: _openNotesPage,
                           icon: const Icon(Icons.list_alt),
                           label: Text('Sve napomene (${_notes.length})'),
+                        ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 14),
+
+          _HiveBlock(
+            color: const Color(0xFFF2EEFB),
+            accent: const Color(0xFF6B46C1),
+            icon: Icons.fact_check_outlined,
+            title: 'Kontrola košnice',
+            actionLabel: 'Dodaj kontrolu',
+            onAction: () => _editInspection(),
+            child: _latestInspection == null
+                ? const Text('Još nema unetih kontrola za ovu košnicu.')
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Poslednja kontrola',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.muted(context),
+                        ),
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(
+                          Icons.fact_check_outlined,
+                          color: Color(0xFF6B46C1),
+                        ),
+                        title: Text(
+                          inspectionSummaryLine(_latestInspection!),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          [
+                            _latestInspection!.inspectedAt
+                                .toLocal()
+                                .toString()
+                                .split('.')
+                                .first,
+                            inspectionValueLabel(
+                              inspectionOutcomeStatuses,
+                              _latestInspection!.outcomeStatus,
+                            ),
+                            'Izvor: ${inspectionSourceLabel(_latestInspection!)}',
+                          ].join(' · '),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _openInspectionsPage,
+                      ),
+                      if (_inspections.length > 1)
+                        TextButton.icon(
+                          onPressed: _openInspectionsPage,
+                          icon: const Icon(Icons.list_alt),
+                          label: Text('Sve kontrole (${_inspections.length})'),
                         ),
                     ],
                   ),
@@ -599,7 +896,10 @@ class _HiveScreenState extends State<HiveScreen> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       HiveStatusRules.blockReasonQueen(status)!,
-                      style: TextStyle(color: Colors.brown.shade700, fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.brown.shade700,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 Row(
@@ -612,7 +912,13 @@ class _HiveScreenState extends State<HiveScreen> {
                         color: discColor,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.black26, width: 2),
-                        boxShadow: const [BoxShadow(blurRadius: 6, color: Colors.black12, offset: Offset(0, 2))],
+                        boxShadow: const [
+                          BoxShadow(
+                            blurRadius: 6,
+                            color: Colors.black12,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -621,9 +927,9 @@ class _HiveScreenState extends State<HiveScreen> {
                         _queen == null
                             ? 'Nema aktivne matice.'
                             : 'Godina: ${_queen!.queenYear ?? '—'}\n'
-                                'Obeležena: ${_queen!.marked ? 'DA' : 'NE'}\n'
-                                '${_queen!.periodLabel}'
-                                '${_queen!.origin != null && _queen!.origin!.isNotEmpty ? '\nPoreklo: ${_queen!.origin}' : ''}',
+                                  'Obeležena: ${_queen!.marked ? 'DA' : 'NE'}\n'
+                                  '${_queen!.periodLabel}'
+                                  '${_queen!.origin != null && _queen!.origin!.isNotEmpty ? '\nPoreklo: ${_queen!.origin}' : ''}',
                         style: const TextStyle(height: 1.35, fontSize: 16),
                       ),
                     ),
@@ -643,7 +949,9 @@ class _HiveScreenState extends State<HiveScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(foregroundColor: Colors.red.shade700),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red.shade700,
+                          ),
                           onPressed: () => _replaceQueen(addNew: false),
                           child: const Text('Završi / uginula'),
                         ),
@@ -654,7 +962,9 @@ class _HiveScreenState extends State<HiveScreen> {
                 if (_queenHistory.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: EdgeInsets.zero,
                       childrenPadding: EdgeInsets.zero,
@@ -670,17 +980,25 @@ class _HiveScreenState extends State<HiveScreen> {
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: (q.marked && q.queenYear != null) ? queenMarkColor(q.queenYear!) : Colors.black54,
+                                color: (q.marked && q.queenYear != null)
+                                    ? queenMarkColor(q.queenYear!)
+                                    : Colors.black54,
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.black26),
                               ),
                             ),
-                            title: Text('Godina ${q.queenYear ?? '—'} · ${q.marked ? 'obeležena' : 'neobeležena'}'),
-                            subtitle: Text([
-                              q.periodLabel,
-                              if (q.endReason != null) queenEndReasons[q.endReason!] ?? q.endReason!,
-                              if (q.origin != null && q.origin!.isNotEmpty) q.origin!,
-                            ].join(' · ')),
+                            title: Text(
+                              'Godina ${q.queenYear ?? '—'} · ${q.marked ? 'obeležena' : 'neobeležena'}',
+                            ),
+                            subtitle: Text(
+                              [
+                                q.periodLabel,
+                                if (q.endReason != null)
+                                  queenEndReasons[q.endReason!] ?? q.endReason!,
+                                if (q.origin != null && q.origin!.isNotEmpty)
+                                  q.origin!,
+                              ].join(' · '),
+                            ),
                           ),
                       ],
                     ),
@@ -707,12 +1025,18 @@ class _HiveScreenState extends State<HiveScreen> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       HiveStatusRules.blockReasonHarvest(status)!,
-                      style: TextStyle(color: Colors.blueGrey.shade700, fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.blueGrey.shade700,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 Text(
                   'Ukupno ${DateTime.now().year}: ${_yearSum.toStringAsFixed(1)} kg',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
                 ),
                 if (_harvests.isEmpty)
                   const Padding(
@@ -774,9 +1098,9 @@ class _HiveBlock extends StatelessWidget {
                   child: Text(
                     title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ],
@@ -792,7 +1116,13 @@ class _HiveBlock extends StatelessWidget {
               ),
               onPressed: onAction,
               icon: const Icon(Icons.add),
-              label: Text(actionLabel, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              label: Text(
+                actionLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ],
         ),

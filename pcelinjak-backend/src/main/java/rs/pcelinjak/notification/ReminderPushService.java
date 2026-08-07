@@ -48,6 +48,9 @@ public class ReminderPushService {
         if (reminder.groupHiveUuid != null) {
             data.put("groupHiveUuid", reminder.groupHiveUuid);
         }
+        if (reminder.inspectionUuid != null) {
+            data.put("inspectionUuid", reminder.inspectionUuid);
+        }
 
         String notifTitle = notificationTitle(reminder);
         String notifBody = reminder.title != null && !reminder.title.isBlank()

@@ -14,23 +14,27 @@ class AuthService {
     String? phone,
   }) async {
     final deviceUuid = await DeviceIdService.getOrCreate();
-    final res = await api.post('/auth/register', {
-      'email': email,
-      'password': password,
-      'name': name,
-      'phone': phone,
-      'deviceUuid': deviceUuid,
-    }, auth: false) as Map<String, dynamic>;
+    final res =
+        await api.post('/auth/register', {
+              'email': email,
+              'password': password,
+              'name': name,
+              'phone': phone,
+              'deviceUuid': deviceUuid,
+            }, auth: false)
+            as Map<String, dynamic>;
     return res['message'] as String? ?? 'Proverite email za aktivaciju naloga.';
   }
 
   Future<void> login({required String email, required String password}) async {
     final deviceUuid = await DeviceIdService.getOrCreate();
-    final res = await api.post('/auth/login', {
-      'email': email,
-      'password': password,
-      'deviceUuid': deviceUuid,
-    }, auth: false) as Map<String, dynamic>;
+    final res =
+        await api.post('/auth/login', {
+              'email': email,
+              'password': password,
+              'deviceUuid': deviceUuid,
+            }, auth: false)
+            as Map<String, dynamic>;
     await api.saveSession(
       token: res['token'] as String,
       userId: res['userId'] as int,
@@ -73,8 +77,13 @@ class SyncService {
     count += await _pushTable('queen', '/api/queens/sync', _boolish);
     count += await _pushTable('note', '/api/notes/sync', (m) => m);
     count += await _pushTable('harvest', '/api/harvests/sync', (m) => m);
+    count += await _pushTable('inspection', '/api/inspections/sync', (m) => m);
     count += await _pushTable('work_group', '/api/work-groups/sync', _boolish);
-    count += await _pushTable('work_group_hive', '/api/work-group-hives/sync', _boolish);
+    count += await _pushTable(
+      'work_group_hive',
+      '/api/work-group-hives/sync',
+      _boolish,
+    );
     count += await _pushTable('reminder', '/api/reminders/sync', _boolish);
     return 'Poslato $count zapisa';
   }
@@ -130,6 +139,7 @@ class SyncService {
     }, alreadyMap: true);
     await _pull('note', '/api/notes/all', Note.fromMap);
     await _pull('harvest', '/api/harvests/all', Harvest.fromMap);
+    await _pull('inspection', '/api/inspections/all', Inspection.fromMap);
     await _pull('work_group', '/api/work-groups/all', (m) {
       return WorkGroup.fromMap(Map<String, dynamic>.from(m)).toMap();
     }, alreadyMap: true);

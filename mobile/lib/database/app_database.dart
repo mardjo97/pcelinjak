@@ -22,17 +22,28 @@ class AppDatabase {
   Future<Database> get db async {
     if (_db != null) return _db!;
     final path = join(await getDatabasesPath(), 'pcelinjak.db');
-    _db = await openDatabase(path, version: 8, onCreate: _onCreate, onUpgrade: _onUpgrade);
+    _db = await openDatabase(
+      path,
+      version: 9,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
     return _db!;
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute("ALTER TABLE hive ADD COLUMN status TEXT NOT NULL DEFAULT 'ACTIVE'");
+      await db.execute(
+        "ALTER TABLE hive ADD COLUMN status TEXT NOT NULL DEFAULT 'ACTIVE'",
+      );
     }
     if (oldVersion < 3) {
-      await db.execute("ALTER TABLE work_group_hive ADD COLUMN membershipStatus TEXT NOT NULL DEFAULT 'ACTIVE'");
-      await db.execute('ALTER TABLE work_group_hive ADD COLUMN activeFrom TEXT');
+      await db.execute(
+        "ALTER TABLE work_group_hive ADD COLUMN membershipStatus TEXT NOT NULL DEFAULT 'ACTIVE'",
+      );
+      await db.execute(
+        'ALTER TABLE work_group_hive ADD COLUMN activeFrom TEXT',
+      );
       await db.execute('ALTER TABLE work_group_hive ADD COLUMN activeTo TEXT');
       await db.execute('''
         UPDATE work_group_hive
@@ -48,14 +59,43 @@ class AppDatabase {
       await db.execute('ALTER TABLE queen ADD COLUMN endReason TEXT');
     }
     if (oldVersion < 6) {
-      await db.execute('ALTER TABLE work_group_hive ADD COLUMN pastureType TEXT');
-      await db.execute('ALTER TABLE work_group_hive ADD COLUMN locationName TEXT');
+      await db.execute(
+        'ALTER TABLE work_group_hive ADD COLUMN pastureType TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE work_group_hive ADD COLUMN locationName TEXT',
+      );
     }
     if (oldVersion < 7) {
       await db.execute('ALTER TABLE apiary ADD COLUMN officialId TEXT');
     }
     if (oldVersion < 8) {
       await db.execute('ALTER TABLE harvest ADD COLUMN workGroupHiveUuid TEXT');
+    }
+    if (oldVersion < 9) {
+      await db.execute('ALTER TABLE reminder ADD COLUMN inspectionUuid TEXT');
+      await db.execute('''
+        CREATE TABLE inspection (
+          uuid TEXT PRIMARY KEY,
+          hiveUuid TEXT NOT NULL,
+          inspectedAt TEXT NOT NULL,
+          summary TEXT,
+          outcomeStatus TEXT NOT NULL DEFAULT 'OK',
+          queenStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+          broodStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+          foodStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+          temperStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+          strengthStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+          followUpAt TEXT,
+          sourceType TEXT,
+          sourceGroupHiveUuid TEXT,
+          sourceReminderUuid TEXT,
+          dateCreated TEXT NOT NULL,
+          dateModified TEXT NOT NULL,
+          dateSynched TEXT,
+          dateDeleted TEXT
+        )
+      ''');
     }
   }
 
@@ -175,9 +215,32 @@ class AppDatabase {
         uuid TEXT PRIMARY KEY,
         hiveUuid TEXT,
         groupHiveUuid TEXT,
+        inspectionUuid TEXT,
         dueAt TEXT NOT NULL,
         title TEXT NOT NULL,
         completed INTEGER NOT NULL DEFAULT 0,
+        dateCreated TEXT NOT NULL,
+        dateModified TEXT NOT NULL,
+        dateSynched TEXT,
+        dateDeleted TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE inspection (
+        uuid TEXT PRIMARY KEY,
+        hiveUuid TEXT NOT NULL,
+        inspectedAt TEXT NOT NULL,
+        summary TEXT,
+        outcomeStatus TEXT NOT NULL DEFAULT 'OK',
+        queenStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+        broodStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+        foodStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+        temperStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+        strengthStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+        followUpAt TEXT,
+        sourceType TEXT,
+        sourceGroupHiveUuid TEXT,
+        sourceReminderUuid TEXT,
         dateCreated TEXT NOT NULL,
         dateModified TEXT NOT NULL,
         dateSynched TEXT,
@@ -194,22 +257,35 @@ class AppDatabase {
   String newUuid() => _uuid.v4();
 
   Future<List<Apiary>> listApiaries() async {
-    final rows = await (await db).query('apiary', where: 'dateDeleted IS NULL', orderBy: 'workNumber ASC');
+    final rows = await (await db).query(
+      'apiary',
+      where: 'dateDeleted IS NULL',
+      orderBy: 'workNumber ASC',
+    );
     return rows.map(Apiary.fromMap).toList();
   }
 
   Future<void> upsertApiary(Apiary a) async {
-    await (await db).insert('apiary', a.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await (await db).insert(
+      'apiary',
+      a.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     _notifyLocalChange();
   }
 
   Future<int> nextWorkNumber() async {
-    final rows = await (await db).rawQuery('SELECT MAX(workNumber) as m FROM apiary WHERE dateDeleted IS NULL');
+    final rows = await (await db).rawQuery(
+      'SELECT MAX(workNumber) as m FROM apiary WHERE dateDeleted IS NULL',
+    );
     final m = rows.first['m'] as int?;
     return (m ?? 0) + 1;
   }
 
-  Future<List<Hive>> listHives(String apiaryUuid, {bool activeOnly = true}) async {
+  Future<List<Hive>> listHives(
+    String apiaryUuid, {
+    bool activeOnly = true,
+  }) async {
     final where = activeOnly
         ? "apiaryUuid = ? AND dateDeleted IS NULL AND (status = 'ACTIVE' OR status IS NULL OR status = '')"
         : 'apiaryUuid = ? AND dateDeleted IS NULL';
@@ -223,7 +299,11 @@ class AppDatabase {
   }
 
   Future<List<Hive>> listAllHives() async {
-    final rows = await (await db).query('hive', where: 'dateDeleted IS NULL', orderBy: 'orderNumber ASC');
+    final rows = await (await db).query(
+      'hive',
+      where: 'dateDeleted IS NULL',
+      orderBy: 'orderNumber ASC',
+    );
     return rows.map(Hive.fromMap).toList();
   }
 
@@ -251,9 +331,20 @@ class AppDatabase {
       if (queen != null) queens[h.uuid] = queen;
     }
 
-    final markedWanted = const ['markir', 'oznac', 'označ', 'marked', 'obelez', 'obelež']
-        .any((k) => q.contains(k));
-    final unmarkedWanted = const ['nemark', 'neoznac', 'neoznač', 'unmarked'].any((k) => q.contains(k));
+    final markedWanted = const [
+      'markir',
+      'oznac',
+      'označ',
+      'marked',
+      'obelez',
+      'obelež',
+    ].any((k) => q.contains(k));
+    final unmarkedWanted = const [
+      'nemark',
+      'neoznac',
+      'neoznač',
+      'unmarked',
+    ].any((k) => q.contains(k));
 
     final hits = <HiveSearchHit>[];
     for (final h in hives) {
@@ -297,7 +388,12 @@ class AppDatabase {
   }
 
   Future<Hive?> findHiveByUuid(String uuid) async {
-    final rows = await (await db).query('hive', where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    final rows = await (await db).query(
+      'hive',
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return Hive.fromMap(rows.first);
   }
@@ -312,7 +408,11 @@ class AppDatabase {
   }
 
   Future<void> upsertHive(Hive h) async {
-    await (await db).insert('hive', h.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await (await db).insert(
+      'hive',
+      h.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     _notifyLocalChange();
   }
 
@@ -320,11 +420,7 @@ class AppDatabase {
     final now = DateTime.now().toUtc().toIso8601String();
     await (await db).update(
       table,
-      {
-        'dateDeleted': now,
-        'dateModified': now,
-        'dateSynched': null,
-      },
+      {'dateDeleted': now, 'dateModified': now, 'dateSynched': null},
       where: 'uuid = ?',
       whereArgs: [uuid],
     );
@@ -370,7 +466,11 @@ class AppDatabase {
   }
 
   Future<void> upsertQueen(Queen q) async {
-    await (await db).insert('queen', q.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await (await db).insert(
+      'queen',
+      q.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     _notifyLocalChange();
   }
 
@@ -385,7 +485,11 @@ class AppDatabase {
   }
 
   Future<void> upsertNote(Note n) async {
-    await (await db).insert('note', n.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await (await db).insert(
+      'note',
+      n.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     _notifyLocalChange();
   }
 
@@ -417,12 +521,92 @@ class AppDatabase {
   }
 
   Future<void> upsertHarvest(Harvest h) async {
-    await (await db).insert('harvest', h.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await (await db).insert(
+      'harvest',
+      h.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    _notifyLocalChange();
+  }
+
+  Future<List<Inspection>> inspectionsForHive(String hiveUuid) async {
+    final rows = await (await db).query(
+      'inspection',
+      where: 'hiveUuid = ? AND dateDeleted IS NULL',
+      whereArgs: [hiveUuid],
+      orderBy: 'inspectedAt DESC, dateCreated DESC',
+    );
+    return rows.map(Inspection.fromMap).toList();
+  }
+
+  Future<Inspection?> latestInspectionForHive(String hiveUuid) async {
+    final rows = await (await db).query(
+      'inspection',
+      where: 'hiveUuid = ? AND dateDeleted IS NULL',
+      whereArgs: [hiveUuid],
+      orderBy: 'inspectedAt DESC, dateCreated DESC',
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return Inspection.fromMap(rows.first);
+  }
+
+  Future<Inspection?> inspectionByUuid(String uuid) async {
+    final rows = await (await db).query(
+      'inspection',
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return Inspection.fromMap(rows.first);
+  }
+
+  Future<Inspection?> inspectionBySource({
+    String? sourceGroupHiveUuid,
+    String? sourceReminderUuid,
+  }) async {
+    if ((sourceGroupHiveUuid == null || sourceGroupHiveUuid.isEmpty) &&
+        (sourceReminderUuid == null || sourceReminderUuid.isEmpty)) {
+      return null;
+    }
+    final rows = await (await db).query(
+      'inspection',
+      where: '''
+        dateDeleted IS NULL AND (
+          (? IS NOT NULL AND sourceGroupHiveUuid = ?) OR
+          (? IS NOT NULL AND sourceReminderUuid = ?)
+        )
+      ''',
+      whereArgs: [
+        sourceGroupHiveUuid,
+        sourceGroupHiveUuid,
+        sourceReminderUuid,
+        sourceReminderUuid,
+      ],
+      orderBy: 'inspectedAt DESC, dateCreated DESC',
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return Inspection.fromMap(rows.first);
+  }
+
+  Future<void> upsertInspection(Inspection inspection) async {
+    await (await db).insert(
+      'inspection',
+      inspection.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     _notifyLocalChange();
   }
 
   Future<Harvest?> harvestByUuid(String uuid) async {
-    final rows = await (await db).query('harvest', where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    final rows = await (await db).query(
+      'harvest',
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return Harvest.fromMap(rows.first);
   }
@@ -439,19 +623,46 @@ class AppDatabase {
   }
 
   Future<WorkGroupHive?> workGroupHiveByUuid(String uuid) async {
-    final rows = await (await db).query('work_group_hive', where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    final rows = await (await db).query(
+      'work_group_hive',
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return WorkGroupHive.fromMap(rows.first);
   }
 
   Future<WorkGroup?> workGroupByUuid(String uuid) async {
-    final rows = await (await db).query('work_group', where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    final rows = await (await db).query(
+      'work_group',
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return WorkGroup.fromMap(rows.first);
   }
 
   Future<Reminder?> reminderByUuid(String uuid) async {
-    final rows = await (await db).query('reminder', where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    final rows = await (await db).query(
+      'reminder',
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return Reminder.fromMap(rows.first);
+  }
+
+  Future<Reminder?> reminderByInspection(String inspectionUuid) async {
+    final rows = await (await db).query(
+      'reminder',
+      where: 'inspectionUuid = ? AND dateDeleted IS NULL',
+      whereArgs: [inspectionUuid],
+      orderBy: 'dueAt DESC',
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return Reminder.fromMap(rows.first);
   }
@@ -487,24 +698,33 @@ class AppDatabase {
   }
 
   Future<List<WorkGroup>> listWorkGroups() async {
-    final rows = await (await db).query('work_group', where: 'dateDeleted IS NULL');
+    final rows = await (await db).query(
+      'work_group',
+      where: 'dateDeleted IS NULL',
+    );
     return rows.map(WorkGroup.fromMap).toList();
   }
 
   Future<void> upsertWorkGroup(WorkGroup g) async {
-    await (await db).insert('work_group', g.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await (await db).insert(
+      'work_group',
+      g.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     _notifyLocalChange();
   }
 
   Future<List<WorkGroupHive>> groupHives(
     String groupUuid, {
+
     /// null = samo aktivne; 'FINISHED' / 'REMOVED' / 'ALL'
     String? filter,
   }) async {
     if (filter == null || filter == 'ACTIVE') {
       final rows = await (await db).query(
         'work_group_hive',
-        where: "groupUuid = ? AND dateDeleted IS NULL AND (membershipStatus = 'ACTIVE' OR (membershipStatus IS NULL AND done = 0))",
+        where:
+            "groupUuid = ? AND dateDeleted IS NULL AND (membershipStatus = 'ACTIVE' OR (membershipStatus IS NULL AND done = 0))",
         whereArgs: [groupUuid],
         orderBy: 'dateCreated DESC',
       );
@@ -537,10 +757,14 @@ class AppDatabase {
   }
 
   /// Aktivno članstvo košnice u grupi (ako postoji).
-  Future<WorkGroupHive?> activeMembershipInGroup(String groupUuid, String hiveUuid) async {
+  Future<WorkGroupHive?> activeMembershipInGroup(
+    String groupUuid,
+    String hiveUuid,
+  ) async {
     final rows = await (await db).query(
       'work_group_hive',
-      where: "groupUuid = ? AND hiveUuid = ? AND dateDeleted IS NULL AND (membershipStatus = 'ACTIVE' OR (membershipStatus IS NULL AND done = 0))",
+      where:
+          "groupUuid = ? AND hiveUuid = ? AND dateDeleted IS NULL AND (membershipStatus = 'ACTIVE' OR (membershipStatus IS NULL AND done = 0))",
       whereArgs: [groupUuid, hiveUuid],
       limit: 1,
     );
@@ -548,13 +772,42 @@ class AppDatabase {
     return WorkGroupHive.fromMap(rows.first);
   }
 
+  Future<WorkGroupHive?> activeMovedMembershipForHive(String hiveUuid) async {
+    final rows = await (await db).rawQuery(
+      '''
+      SELECT wgh.*
+      FROM work_group_hive wgh
+      JOIN work_group wg ON wg.uuid = wgh.groupUuid
+      WHERE
+        wgh.hiveUuid = ?
+        AND wgh.dateDeleted IS NULL
+        AND wg.dateDeleted IS NULL
+        AND wg.groupType = 'MOVED'
+        AND (wgh.membershipStatus = 'ACTIVE' OR (wgh.membershipStatus IS NULL AND wgh.done = 0))
+      ORDER BY COALESCE(wgh.activeFrom, wgh.dateCreated) DESC
+      LIMIT 1
+      ''',
+      [hiveUuid],
+    );
+    if (rows.isEmpty) return null;
+    return WorkGroupHive.fromMap(rows.first);
+  }
+
   Future<void> upsertWorkGroupHive(WorkGroupHive g) async {
-    await (await db).insert('work_group_hive', g.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await (await db).insert(
+      'work_group_hive',
+      g.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     _notifyLocalChange();
   }
 
   Future<void> upsertReminder(Reminder r) async {
-    await (await db).insert('reminder', r.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await (await db).insert(
+      'reminder',
+      r.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     _notifyLocalChange();
   }
 
@@ -605,6 +858,7 @@ class AppDatabase {
     'queen',
     'note',
     'harvest',
+    'inspection',
     'work_group',
     'work_group_hive',
     'reminder',
@@ -621,13 +875,24 @@ class AppDatabase {
 
   Future<void> markSynched(String table, String uuid, DateTime when) async {
     final database = await db;
-    final rows = await database.query(table, columns: ['dateModified'], where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    final rows = await database.query(
+      table,
+      columns: ['dateModified'],
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
     var synched = when.toUtc();
     if (rows.isNotEmpty) {
       final mod = _parseDt(rows.first['dateModified']);
       if (mod != null && mod.isAfter(synched)) synched = mod;
     }
-    await database.update(table, {'dateSynched': synched.toIso8601String()}, where: 'uuid = ?', whereArgs: [uuid]);
+    await database.update(
+      table,
+      {'dateSynched': synched.toIso8601String()},
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+    );
   }
 
   /// Zamenjuje tabelu podacima sa servera. Pull = već sinhronizovano.
@@ -642,7 +907,11 @@ class AppDatabase {
       var synched = pulledAt;
       if (mod != null && mod.isAfter(synched)) synched = mod;
       r['dateSynched'] = synched.toIso8601String();
-      await database.insert(table, r, conflictAlgorithm: ConflictAlgorithm.replace);
+      await database.insert(
+        table,
+        r,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
   }
 
@@ -651,6 +920,7 @@ class AppDatabase {
     final database = await db;
     for (final table in const [
       'reminder',
+      'inspection',
       'work_group_hive',
       'work_group',
       'harvest',
@@ -664,7 +934,12 @@ class AppDatabase {
   }
 
   Future<Apiary?> apiaryByUuid(String uuid) async {
-    final rows = await (await db).query('apiary', where: 'uuid = ?', whereArgs: [uuid], limit: 1);
+    final rows = await (await db).query(
+      'apiary',
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return Apiary.fromMap(rows.first);
   }

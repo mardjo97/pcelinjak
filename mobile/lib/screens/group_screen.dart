@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../database/app_database.dart';
 import '../l10n/app_localizations.dart';
@@ -11,9 +12,10 @@ import '../services/locale_service.dart';
 import '../services/reminder_notification_title.dart';
 import '../services/reminder_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/barcode_scan.dart';
 import '../widgets/form_spaced_column.dart';
+import '../widgets/hive_editors.dart';
 import '../widgets/home_fab.dart';
+import '../widgets/keyboard_dismiss.dart';
 import 'hive_screen.dart';
 
 class GroupScreen extends StatefulWidget {
@@ -33,12 +35,15 @@ class _GroupScreenState extends State<GroupScreen> {
   final Map<String, Hive> _hives = {};
   final Map<String, Apiary> _apiaries = {};
   final Map<String, Queen> _queens = {};
+
   /// ACTIVE | FINISHED | REMOVED | ALL
   String _filter = 'ACTIVE';
   Timer? _debounce;
 
-  String title(BuildContext context) =>
-      LocaleController.workGroupTitle(AppLocalizations.of(context), widget.groupType);
+  String title(BuildContext context) => LocaleController.workGroupTitle(
+    AppLocalizations.of(context),
+    widget.groupType,
+  );
 
   @override
   void initState() {
@@ -95,9 +100,20 @@ class _GroupScreenState extends State<GroupScreen> {
     final q = _searchCtrl.text.trim().toLowerCase();
     if (q.isEmpty) return _items;
 
-    final markedWanted = const ['markir', 'oznac', 'označ', 'marked', 'obelez', 'obelež']
-        .any((k) => q.contains(k));
-    final unmarkedWanted = const ['nemark', 'neoznac', 'neoznač', 'unmarked'].any((k) => q.contains(k));
+    final markedWanted = const [
+      'markir',
+      'oznac',
+      'označ',
+      'marked',
+      'obelez',
+      'obelež',
+    ].any((k) => q.contains(k));
+    final unmarkedWanted = const [
+      'nemark',
+      'neoznac',
+      'neoznač',
+      'unmarked',
+    ].any((k) => q.contains(k));
 
     return _items.where((item) {
       final hive = _hives[item.hiveUuid];
@@ -146,90 +162,317 @@ class _GroupScreenState extends State<GroupScreen> {
   }
 
   Future<void> _addHive() async {
-    final choice = await showModalBottomSheet<String>(
+    final queryCtrl = TextEditingController();
+    final pending = <Hive>[];
+    final hits = <HiveSearchHit>[];
+    var searching = false;
+    var scanMany = false;
+    var flash = '';
+    DateTime? cooldownUntil;
+    Timer? debounce;
+
+    Future<void> refreshHits(StateSetter setLocal, String query) async {
+      if (query.trim().isEmpty) {
+        setLocal(() {
+          hits.clear();
+          searching = false;
+        });
+        return;
+      }
+      setLocal(() => searching = true);
+      final next = await db.searchHives(query);
+      if (!mounted) return;
+      setLocal(() {
+        hits
+          ..clear()
+          ..addAll(next);
+        searching = false;
+      });
+    }
+
+    Future<void> appendHive(StateSetter setLocal, Hive hive) async {
+      if (pending.any((item) => item.uuid == hive.uuid)) {
+        setLocal(() => flash = 'Već u listi: ${hive.barcode}');
+        return;
+      }
+      final resolved = await _resolveHiveForGroup(hive.barcode, silent: true);
+      if (resolved == null) {
+        setLocal(() => flash = 'Ne može da se doda: ${hive.barcode}');
+        return;
+      }
+      setLocal(() {
+        pending.add(resolved);
+        flash = 'Dodato: ${resolved.barcode}';
+      });
+    }
+
+    final saved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(leading: const Icon(Icons.qr_code_scanner), title: const Text('Skeniraj jednu'), onTap: () => Navigator.pop(ctx, 'scan')),
-            ListTile(
-              leading: const Icon(Icons.playlist_add),
-              title: const Text('Više košnica (sken)'),
-              subtitle: const Text('Kontinuirano skeniranje'),
-              onTap: () => Navigator.pop(ctx, 'many'),
+      builder: (ctx) => Dialog.fullscreen(
+        child: StatefulBuilder(
+          builder: (ctx, setLocal) => DefaultTabController(
+            length: 2,
+            child: UnfocusOnTabChange(
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text('Dodaj u ${title(context)}'),
+                  bottom: const TabBar(
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white70,
+                    indicatorColor: AppColors.honey,
+                    indicatorWeight: 3,
+                    tabs: [
+                      Tab(text: 'Scan', icon: Icon(Icons.qr_code_scanner)),
+                      Tab(text: 'Ručno', icon: Icon(Icons.keyboard)),
+                    ],
+                  ),
+                ),
+                body: Column(
+                  children: [
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          Column(
+                            children: [
+                              CheckboxListTile(
+                                value: scanMany,
+                                title: const Text('Skeniraj više'),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                onChanged: (v) =>
+                                    setLocal(() => scanMany = v ?? false),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: DismissKeyboardOnPointer(
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      MobileScanner(
+                                        onDetect: (capture) async {
+                                          final raw = capture
+                                              .barcodes
+                                              .firstOrNull
+                                              ?.rawValue
+                                              ?.trim();
+                                          if (raw == null || raw.isEmpty)
+                                            return;
+                                          final now = DateTime.now();
+                                          if (cooldownUntil != null &&
+                                              now.isBefore(cooldownUntil!)) {
+                                            return;
+                                          }
+                                          cooldownUntil = now.add(
+                                            Duration(
+                                              milliseconds: scanMany
+                                                  ? 1400
+                                                  : 1800,
+                                            ),
+                                          );
+                                          final hive =
+                                              await _resolveHiveForGroup(
+                                                raw,
+                                                silent: true,
+                                              );
+                                          if (hive == null) {
+                                            setLocal(
+                                              () =>
+                                                  flash = 'Nije pogodna: $raw',
+                                            );
+                                            return;
+                                          }
+                                          await appendHive(setLocal, hive);
+                                        },
+                                      ),
+                                      if (flash.isNotEmpty)
+                                        Positioned(
+                                          left: 12,
+                                          right: 12,
+                                          bottom: 12,
+                                          child: Material(
+                                            color: Colors.black87,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
+                                              child: Text(
+                                                flash,
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: DismissKeyboardOnPointer(
+                                  child: _PendingHiveList(
+                                    hives: pending,
+                                    emptyText:
+                                        'Skenirajte postojeće košnice za dodavanje u grupu.',
+                                    onRemove: (i) =>
+                                        setLocal(() => pending.removeAt(i)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                TextField(
+                                  controller: queryCtrl,
+                                  autofocus: true,
+                                  onTapOutside: dismissKeyboardOnTapOutside,
+                                  onChanged: (value) {
+                                    debounce?.cancel();
+                                    debounce = Timer(
+                                      const Duration(milliseconds: 220),
+                                      () => refreshHits(setLocal, value),
+                                    );
+                                  },
+                                  decoration: const InputDecoration(
+                                    labelText: 'Pretraži košnicu',
+                                    hintText: 'Barkod, RB, pčelinjak, tip…',
+                                    prefixIcon: Icon(Icons.search),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Expanded(
+                                  child: DismissKeyboardOnPointer(
+                                    child: searching
+                                        ? const Center(
+                                            child: CircularProgressIndicator(),
+                                          )
+                                        : hits.isEmpty
+                                        ? _PendingHiveList(
+                                            hives: pending,
+                                            emptyText:
+                                                'Pretražite i izaberite postojeću košnicu.',
+                                            onRemove: (i) => setLocal(
+                                              () => pending.removeAt(i),
+                                            ),
+                                          )
+                                        : Column(
+                                            children: [
+                                              Expanded(
+                                                child: ListView.separated(
+                                                  itemCount: hits.length,
+                                                  separatorBuilder: (_, _) =>
+                                                      const Divider(height: 1),
+                                                  itemBuilder: (context, i) {
+                                                    final hit = hits[i];
+                                                    final hive = hit.hive;
+                                                    return ListTile(
+                                                      title: Text(
+                                                        '${hive.barcode} · ${hive.hiveType}',
+                                                      ),
+                                                      subtitle: Text(
+                                                        hit.apiary == null
+                                                            ? 'Košnica ${hive.orderNumber}'
+                                                            : 'Pčelinjak ${hit.apiary!.workNumber} · ${hit.apiary!.name}\nKošnica ${hive.orderNumber}',
+                                                      ),
+                                                      isThreeLine:
+                                                          hit.apiary != null,
+                                                      trailing: const Icon(
+                                                        Icons
+                                                            .add_circle_outline,
+                                                      ),
+                                                      onTap: () async =>
+                                                          appendHive(
+                                                            setLocal,
+                                                            hive,
+                                                          ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Expanded(
+                                                child: _PendingHiveList(
+                                                  hives: pending,
+                                                  emptyText:
+                                                      'Još nema izabranih košnica.',
+                                                  onRemove: (i) => setLocal(
+                                                    () => pending.removeAt(i),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Otkaži'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: pending.isEmpty
+                                    ? null
+                                    : () => Navigator.pop(ctx, true),
+                                child: Text(
+                                  pending.length == 1
+                                      ? 'Dodaj 1 košnicu'
+                                      : 'Dodaj ${pending.length} košnica',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            ListTile(leading: const Icon(Icons.keyboard), title: const Text('Ukucaj kod'), onTap: () => Navigator.pop(ctx, 'type')),
-          ],
+          ),
         ),
       ),
     );
-    if (choice == null) return;
-    if (choice == 'many') {
-      await _addManyHives();
-      return;
-    }
-    String? code;
-    if (choice == 'scan') {
-      if (!mounted) return;
-      code = await scanBarcode(context);
-    } else {
-      if (!mounted) return;
-      final ctrl = TextEditingController();
-      code = await showDialog<String>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Kod'),
-          content: TextField(
-            controller: ctrl,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Barkod'),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Otkaži')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('OK')),
-          ],
-        ),
-      );
-    }
-    if (code == null || code.isEmpty) return;
-    final hive = await _resolveHiveForGroup(code);
-    if (hive == null) return;
-    await _promptDetailsAndSave(hive);
-  }
-
-  Future<void> _addManyHives() async {
-    final codes = await scanBarcodesContinuous(context, title: 'Skeniraj za ${title(context)}');
-    if (codes == null || codes.isEmpty || !mounted) return;
-
-    final hives = <Hive>[];
-    var skipped = 0;
-    for (final code in codes) {
-      final hive = await _resolveHiveForGroup(code, silent: true);
-      if (hive == null) {
-        skipped++;
-        continue;
-      }
-      hives.add(hive);
-    }
-    if (hives.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(skipped == 0 ? 'Nema košnica za dodavanje.' : 'Nijedna košnica nije pogodna ($skipped preskočeno).')),
-      );
-      return;
-    }
+    debounce?.cancel();
+    queryCtrl.dispose();
+    if (saved != true || pending.isEmpty) return;
 
     final draft = await _collectGroupAddDetails(
-      summary: hives.length == 1
-          ? 'Košnica ${hives.first.orderNumber} · ${hives.first.barcode}'
-          : '${hives.length} košnica',
+      summary: pending.length == 1
+          ? 'Košnica ${pending.first.orderNumber} · ${pending.first.barcode}'
+          : '${pending.length} košnica',
     );
     if (draft == null) return;
 
     var added = 0;
-    for (final hive in hives) {
+    var skipped = 0;
+    for (final hive in pending) {
       final ok = await _commitHiveToGroup(hive, draft);
       if (ok) {
         added++;
@@ -240,7 +483,13 @@ class _GroupScreenState extends State<GroupScreen> {
     await _reload();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(skipped == 0 ? 'Dodato $added košnica.' : 'Dodato $added · preskočeno $skipped.')),
+      SnackBar(
+        content: Text(
+          skipped == 0
+              ? 'Dodato $added košnica.'
+              : 'Dodato $added · preskočeno $skipped.',
+        ),
+      ),
     );
   }
 
@@ -249,14 +498,18 @@ class _GroupScreenState extends State<GroupScreen> {
     final hive = await db.findHiveByBarcode(code);
     if (hive == null) {
       if (!silent && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nije u bazi: $code')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Nije u bazi: $code')));
       }
       return null;
     }
     final statusBlock = HiveStatusRules.blockReasonAddToGroup(hive.status);
     if (statusBlock != null) {
       if (!silent && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${hive.barcode}: $statusBlock')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${hive.barcode}: $statusBlock')),
+        );
       }
       return null;
     }
@@ -266,7 +519,11 @@ class _GroupScreenState extends State<GroupScreen> {
     if (existing != null) {
       if (!silent && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Košnica ${hive.barcode} je već aktivna u ovoj grupi.')),
+          SnackBar(
+            content: Text(
+              'Košnica ${hive.barcode} je već aktivna u ovoj grupi.',
+            ),
+          ),
         );
       }
       return null;
@@ -274,22 +531,17 @@ class _GroupScreenState extends State<GroupScreen> {
     return hive;
   }
 
-  Future<void> _promptDetailsAndSave(Hive hive) async {
-    final draft = await _collectGroupAddDetails(
-      summary: 'Košnica ${hive.orderNumber} · ${hive.barcode}',
-    );
-    if (draft == null) return;
-    await _commitHiveToGroup(hive, draft);
-    await _reload();
-  }
-
-  Future<_GroupAddDraft?> _collectGroupAddDetails({required String summary}) async {
+  Future<_GroupAddDraft?> _collectGroupAddDetails({
+    required String summary,
+  }) async {
     final group = _group;
     if (group == null) return null;
     String? pasture = group.pastureType ?? pastureTypes.first;
     final locCtrl = TextEditingController(text: group.locationName ?? '');
     final noteCtrl = TextEditingController();
-    final amountCtrl = TextEditingController(text: widget.groupType == 'MOVED' ? '1' : '');
+    final amountCtrl = TextEditingController(
+      text: widget.groupType == 'MOVED' ? '1' : '',
+    );
     DateTime? checkDate;
 
     final ok = await showDialog<bool>(
@@ -298,31 +550,48 @@ class _GroupScreenState extends State<GroupScreen> {
         builder: (ctx, setLocal) {
           final fields = <Widget>[
             Text(summary),
-            if (widget.groupType == 'MOVED' || widget.groupType == 'GOOD_PASTURE')
+            if (widget.groupType == 'MOVED' ||
+                widget.groupType == 'GOOD_PASTURE')
               DropdownButtonFormField<String>(
                 initialValue: pasture,
-                items: pastureTypes.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+                items: pastureTypes
+                    .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                    .toList(),
                 onChanged: (v) => setLocal(() => pasture = v),
                 decoration: const InputDecoration(labelText: 'Paša'),
               ),
             if (widget.groupType == 'MOVED')
-              TextField(controller: locCtrl, decoration: const InputDecoration(labelText: 'Lokacija')),
-            if (widget.groupType == 'GOOD_PASTURE' || widget.groupType == 'FEEDING' || widget.groupType == 'MOVED')
+              TextField(
+                controller: locCtrl,
+                decoration: const InputDecoration(labelText: 'Lokacija'),
+              ),
+            if (widget.groupType == 'GOOD_PASTURE' ||
+                widget.groupType == 'FEEDING' ||
+                widget.groupType == 'MOVED')
               TextField(
                 controller: amountCtrl,
                 decoration: const InputDecoration(labelText: 'Količina (kg)'),
                 keyboardType: TextInputType.number,
               ),
-            if (widget.groupType == 'CONTROL' || widget.groupType == 'REPRODUCTION' || widget.groupType == 'QUEEN_CHANGE')
-              TextField(controller: noteCtrl, decoration: const InputDecoration(labelText: 'Napomena'), maxLines: 2),
-            if (widget.groupType == 'CONTROL' || widget.groupType == 'QUEEN_CHANGE')
+            if (widget.groupType == 'CONTROL' ||
+                widget.groupType == 'REPRODUCTION' ||
+                widget.groupType == 'QUEEN_CHANGE')
+              TextField(
+                controller: noteCtrl,
+                decoration: const InputDecoration(labelText: 'Napomena'),
+                maxLines: 2,
+              ),
+            if (widget.groupType == 'CONTROL' ||
+                widget.groupType == 'QUEEN_CHANGE')
               Align(
                 alignment: Alignment.centerLeft,
                 child: OutlinedButton.icon(
                   onPressed: () async {
                     final d = await showDatePicker(
                       context: ctx,
-                      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                      firstDate: DateTime.now().subtract(
+                        const Duration(days: 1),
+                      ),
                       lastDate: DateTime.now().add(const Duration(days: 365)),
                       initialDate: DateTime.now().add(const Duration(days: 2)),
                     );
@@ -344,8 +613,14 @@ class _GroupScreenState extends State<GroupScreen> {
               child: FormSpacedColumn(children: fields),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
-              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Dodaj')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Otkaži'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Dodaj'),
+              ),
             ],
           );
         },
@@ -397,7 +672,10 @@ class _GroupScreenState extends State<GroupScreen> {
       note: draft.noteText.isEmpty ? null : draft.noteText,
       checkDate: draft.checkDate,
       reminderAt: draft.reminderAt,
-      pastureType: (widget.groupType == 'MOVED' || widget.groupType == 'GOOD_PASTURE') ? draft.pasture : null,
+      pastureType:
+          (widget.groupType == 'MOVED' || widget.groupType == 'GOOD_PASTURE')
+          ? draft.pasture
+          : null,
       locationName: widget.groupType == 'MOVED' ? draft.locationName : null,
       membershipStatus: 'ACTIVE',
       activeFrom: DateTime.now(),
@@ -405,29 +683,39 @@ class _GroupScreenState extends State<GroupScreen> {
     await db.upsertWorkGroupHive(item);
 
     if (GroupSharedDataSync.usesHarvest(widget.groupType)) {
-      await db.upsertHarvest(Harvest(
-        uuid: db.newUuid(),
-        hiveUuid: hive.uuid,
-        pastureType: draft.pasture ?? 'Drugo',
-        amountKg: draft.amount ?? 0,
-        collectedAt: DateTime.now(),
-        harvestYear: DateTime.now().year,
-        workGroupHiveUuid: item.uuid,
-      ));
+      await db.upsertHarvest(
+        Harvest(
+          uuid: db.newUuid(),
+          hiveUuid: hive.uuid,
+          pastureType: draft.pasture ?? 'Drugo',
+          amountKg: draft.amount ?? 0,
+          collectedAt: DateTime.now(),
+          harvestYear: DateTime.now().year,
+          workGroupHiveUuid: item.uuid,
+        ),
+      );
     }
 
     if (draft.noteText.isNotEmpty) {
-      await db.upsertNote(Note(
-        uuid: db.newUuid(),
-        hiveUuid: hive.uuid,
-        content: draft.noteText,
-        groupType: widget.groupType,
-        groupRecordUuid: item.uuid,
-      ));
+      await db.upsertNote(
+        Note(
+          uuid: db.newUuid(),
+          hiveUuid: hive.uuid,
+          content: draft.noteText,
+          groupType: widget.groupType,
+          groupRecordUuid: item.uuid,
+        ),
+      );
     }
 
     if (widget.groupType == 'QUEEN_CHANGE' && draft.checkDate != null) {
-      final q = await db.activeQueen(hive.uuid) ?? Queen(uuid: db.newUuid(), hiveUuid: hive.uuid, activeFrom: draft.checkDate);
+      final q =
+          await db.activeQueen(hive.uuid) ??
+          Queen(
+            uuid: db.newUuid(),
+            hiveUuid: hive.uuid,
+            activeFrom: draft.checkDate,
+          );
       q.activeFrom = draft.checkDate;
       q.touch();
       q.dateSynched = null;
@@ -446,11 +734,14 @@ class _GroupScreenState extends State<GroupScreen> {
         title: remTitle,
       );
       await db.upsertReminder(rem);
-      final apiary = _apiaries[hive.apiaryUuid] ?? await db.apiaryByUuid(hive.apiaryUuid);
+      final apiary =
+          _apiaries[hive.apiaryUuid] ?? await db.apiaryByUuid(hive.apiaryUuid);
       await ReminderService.instance.schedule(
         id: rem.uuid.hashCode & 0x7fffffff,
         title: ReminderNotificationTitle.forHive(hive, apiary),
-        body: draft.noteText.isEmpty ? 'Podsetnik 1 dan pre provere' : draft.noteText,
+        body: draft.noteText.isEmpty
+            ? 'Podsetnik 1 dan pre provere'
+            : draft.noteText,
         when: draft.reminderAt!,
         reminderUuid: rem.uuid,
       );
@@ -458,7 +749,11 @@ class _GroupScreenState extends State<GroupScreen> {
     return true;
   }
 
-  Future<void> _closeMembership(WorkGroupHive item, String status, {bool queenLaid = false}) async {
+  Future<void> _closeMembership(
+    WorkGroupHive item,
+    String status, {
+    bool queenLaid = false,
+  }) async {
     item.membershipStatus = status;
     item.activeFrom ??= item.dateCreated;
     item.activeTo = DateTime.now();
@@ -466,13 +761,16 @@ class _GroupScreenState extends State<GroupScreen> {
     item.dateSynched = null;
     await db.upsertWorkGroupHive(item);
     if (queenLaid) {
-      await db.upsertNote(Note(
-        uuid: db.newUuid(),
-        hiveUuid: item.hiveUuid,
-        content: 'Matica je pronela — završeno u grupi zamene (${item.periodLabel}).',
-        groupType: widget.groupType,
-        groupRecordUuid: item.uuid,
-      ));
+      await db.upsertNote(
+        Note(
+          uuid: db.newUuid(),
+          hiveUuid: item.hiveUuid,
+          content:
+              'Matica je pronela — završeno u grupi zamene (${item.periodLabel}).',
+          groupType: widget.groupType,
+          groupRecordUuid: item.uuid,
+        ),
+      );
     }
     await _reload();
   }
@@ -487,7 +785,10 @@ class _GroupScreenState extends State<GroupScreen> {
           'Briše se i povezani prinos (ako postoji), napomene i podsetnici.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Otkaži'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Obriši'),
@@ -502,10 +803,15 @@ class _GroupScreenState extends State<GroupScreen> {
 
   Future<void> _editMembership(WorkGroupHive item) async {
     final group = _group!;
-    String? pasture = item.pastureType ?? group.pastureType ?? pastureTypes.first;
-    final locCtrl = TextEditingController(text: item.locationName ?? group.locationName ?? '');
+    String? pasture =
+        item.pastureType ?? group.pastureType ?? pastureTypes.first;
+    final locCtrl = TextEditingController(
+      text: item.locationName ?? group.locationName ?? '',
+    );
     final noteCtrl = TextEditingController(text: item.note ?? '');
-    final amountCtrl = TextEditingController(text: item.amount != null ? '${item.amount}' : '');
+    final amountCtrl = TextEditingController(
+      text: item.amount != null ? '${item.amount}' : '',
+    );
     DateTime? checkDate = item.checkDate;
 
     final ok = await showDialog<bool>(
@@ -513,31 +819,53 @@ class _GroupScreenState extends State<GroupScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) {
           final fields = <Widget>[
-            if (widget.groupType == 'MOVED' || widget.groupType == 'GOOD_PASTURE')
+            if (widget.groupType == 'MOVED' ||
+                widget.groupType == 'GOOD_PASTURE')
               DropdownButtonFormField<String>(
-                initialValue: pastureTypes.contains(pasture) ? pasture : pastureTypes.last,
-                items: pastureTypes.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+                initialValue: pastureTypes.contains(pasture)
+                    ? pasture
+                    : pastureTypes.last,
+                items: pastureTypes
+                    .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                    .toList(),
                 onChanged: (v) => setLocal(() => pasture = v),
                 decoration: const InputDecoration(labelText: 'Paša'),
               ),
             if (widget.groupType == 'MOVED')
-              TextField(controller: locCtrl, decoration: const InputDecoration(labelText: 'Lokacija')),
-            if (widget.groupType == 'GOOD_PASTURE' || widget.groupType == 'FEEDING' || widget.groupType == 'MOVED')
+              TextField(
+                controller: locCtrl,
+                decoration: const InputDecoration(labelText: 'Lokacija'),
+              ),
+            if (widget.groupType == 'GOOD_PASTURE' ||
+                widget.groupType == 'FEEDING' ||
+                widget.groupType == 'MOVED')
               TextField(
                 controller: amountCtrl,
                 decoration: const InputDecoration(labelText: 'Količina (kg)'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
-            if (widget.groupType == 'CONTROL' || widget.groupType == 'REPRODUCTION' || widget.groupType == 'QUEEN_CHANGE' || widget.groupType == 'FEEDING')
-              TextField(controller: noteCtrl, decoration: const InputDecoration(labelText: 'Napomena'), maxLines: 2),
-            if (widget.groupType == 'CONTROL' || widget.groupType == 'QUEEN_CHANGE')
+            if (widget.groupType == 'CONTROL' ||
+                widget.groupType == 'REPRODUCTION' ||
+                widget.groupType == 'QUEEN_CHANGE' ||
+                widget.groupType == 'FEEDING')
+              TextField(
+                controller: noteCtrl,
+                decoration: const InputDecoration(labelText: 'Napomena'),
+                maxLines: 2,
+              ),
+            if (widget.groupType == 'CONTROL' ||
+                widget.groupType == 'QUEEN_CHANGE')
               Align(
                 alignment: Alignment.centerLeft,
                 child: OutlinedButton.icon(
                   onPressed: () async {
                     final d = await showDatePicker(
                       context: ctx,
-                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                      firstDate: DateTime.now().subtract(
+                        const Duration(days: 365),
+                      ),
                       lastDate: DateTime.now().add(const Duration(days: 365)),
                       initialDate: checkDate ?? DateTime.now(),
                     );
@@ -559,8 +887,14 @@ class _GroupScreenState extends State<GroupScreen> {
               child: FormSpacedColumn(children: fields),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
-              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sačuvaj')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Otkaži'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Sačuvaj'),
+              ),
             ],
           );
         },
@@ -572,14 +906,18 @@ class _GroupScreenState extends State<GroupScreen> {
       item.pastureType = pasture;
     }
     if (widget.groupType == 'MOVED') {
-      item.locationName = locCtrl.text.trim().isEmpty ? null : locCtrl.text.trim();
+      item.locationName = locCtrl.text.trim().isEmpty
+          ? null
+          : locCtrl.text.trim();
       group.pastureType = pasture;
       group.locationName = item.locationName;
       group.touch();
       group.dateSynched = null;
       await db.upsertWorkGroup(group);
     }
-    if (widget.groupType == 'GOOD_PASTURE' || widget.groupType == 'FEEDING' || widget.groupType == 'MOVED') {
+    if (widget.groupType == 'GOOD_PASTURE' ||
+        widget.groupType == 'FEEDING' ||
+        widget.groupType == 'MOVED') {
       item.amount = double.tryParse(amountCtrl.text.replaceAll(',', '.'));
     }
     if (widget.groupType == 'CONTROL' ||
@@ -597,7 +935,42 @@ class _GroupScreenState extends State<GroupScreen> {
     item.touch();
     item.dateSynched = null;
     await db.upsertWorkGroupHive(item);
-    await GroupSharedDataSync().syncFromMembership(item, groupType: widget.groupType);
+    await GroupSharedDataSync().syncFromMembership(
+      item,
+      groupType: widget.groupType,
+    );
+    await _reload();
+  }
+
+  Future<void> _createInspectionFromGroup(WorkGroupHive item) async {
+    if (widget.groupType != 'CONTROL') return;
+    final hive =
+        _hives[item.hiveUuid] ?? await db.findHiveByUuid(item.hiveUuid);
+    if (hive == null || !mounted) return;
+    final existing = await db.inspectionBySource(
+      sourceGroupHiveUuid: item.uuid,
+    );
+    if (!mounted) return;
+    final saved = await editInspectionDialog(
+      context,
+      hiveUuid: hive.uuid,
+      existing: existing,
+      sourceType: 'CONTROL_GROUP',
+      sourceGroupHiveUuid: item.uuid,
+      initialInspectedAt: item.checkDate ?? DateTime.now(),
+      initialSummary: item.note,
+    );
+    if (!saved) return;
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          existing == null
+              ? 'Kontrola je upisana za košnicu ${hive.barcode}.'
+              : 'Kontrola je ažurirana za košnicu ${hive.barcode}.',
+        ),
+      ),
+    );
     await _reload();
   }
 
@@ -621,29 +994,52 @@ class _GroupScreenState extends State<GroupScreen> {
     }
   }
 
-  List<Widget> _detailRows(WorkGroupHive item, Hive? hive, Apiary? apiary, Queen? queen) {
+  List<Widget> _detailRows(
+    WorkGroupHive item,
+    Hive? hive,
+    Apiary? apiary,
+    Queen? queen,
+  ) {
     final pasture = item.pastureType ?? _group?.pastureType;
     final location = item.locationName ?? _group?.locationName;
     final rows = <Widget>[];
 
     void add(String label, String? value) {
       if (value == null || value.trim().isEmpty) return;
-      rows.add(Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 88,
-              child: Text(label, style: TextStyle(fontSize: 12, color: AppTheme.muted(context), fontWeight: FontWeight.w600)),
-            ),
-            Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-          ],
+      rows.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 88,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.muted(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ));
+      );
     }
 
-    if (apiary != null) add('Pčelinjak', '${apiary.workNumber} · ${apiary.name}');
+    if (apiary != null)
+      add('Pčelinjak', '${apiary.workNumber} · ${apiary.name}');
     if (hive != null) add('Tip', hive.hiveType);
 
     switch (widget.groupType) {
@@ -666,7 +1062,10 @@ class _GroupScreenState extends State<GroupScreen> {
           add('Provera', item.checkDate!.toLocal().toString().split(' ').first);
         }
         if (item.reminderAt != null) {
-          add('Podsetnik', item.reminderAt!.toLocal().toString().split('.').first);
+          add(
+            'Podsetnik',
+            item.reminderAt!.toLocal().toString().split('.').first,
+          );
         }
         if (widget.groupType == 'QUEEN_CHANGE' && queen != null) {
           final parts = <String>[
@@ -699,17 +1098,35 @@ class _GroupScreenState extends State<GroupScreen> {
       appBar: AppBar(
         backgroundColor: color,
         foregroundColor: Colors.white,
-        title: Text('${title(context)} · ${visible.length}${q.isNotEmpty ? ' / ${_items.length}' : ''}'),
+        title: Text(
+          '${title(context)} · ${visible.length}${q.isNotEmpty ? ' / ${_items.length}' : ''}',
+        ),
         actions: [
           PopupMenuButton<String>(
             tooltip: 'Istorija / filter',
             icon: const Icon(Icons.history),
             onSelected: _setFilter,
             itemBuilder: (_) => [
-              CheckedPopupMenuItem(value: 'ACTIVE', checked: _filter == 'ACTIVE', child: const Text('Aktivne')),
-              CheckedPopupMenuItem(value: 'FINISHED', checked: _filter == 'FINISHED', child: const Text('Završene')),
-              CheckedPopupMenuItem(value: 'REMOVED', checked: _filter == 'REMOVED', child: const Text('Uklonjene (greška)')),
-              CheckedPopupMenuItem(value: 'ALL', checked: _filter == 'ALL', child: const Text('Sve (istorija)')),
+              CheckedPopupMenuItem(
+                value: 'ACTIVE',
+                checked: _filter == 'ACTIVE',
+                child: const Text('Aktivne'),
+              ),
+              CheckedPopupMenuItem(
+                value: 'FINISHED',
+                checked: _filter == 'FINISHED',
+                child: const Text('Završene'),
+              ),
+              CheckedPopupMenuItem(
+                value: 'REMOVED',
+                checked: _filter == 'REMOVED',
+                child: const Text('Uklonjene (greška)'),
+              ),
+              CheckedPopupMenuItem(
+                value: 'ALL',
+                checked: _filter == 'ALL',
+                child: const Text('Sve (istorija)'),
+              ),
             ],
           ),
         ],
@@ -771,6 +1188,7 @@ class _GroupScreenState extends State<GroupScreen> {
             child: TextField(
               controller: _searchCtrl,
               onChanged: _onSearchChanged,
+              onTapOutside: dismissKeyboardOnTapOutside,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Barkod, tip, pčelinjak, napomena, matica…',
@@ -789,121 +1207,207 @@ class _GroupScreenState extends State<GroupScreen> {
             ),
           ),
           Expanded(
-            child: _items.isEmpty
-                ? Center(
-                    child: Text(
-                      showingHistory ? 'Nema zapisa u ovoj istoriji.' : 'Lista je prazna. Skenirajte košnicu.',
-                      style: TextStyle(color: color, fontWeight: FontWeight.w600),
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                : visible.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Nema rezultata za „$q”.',
-                          style: TextStyle(color: color, fontWeight: FontWeight.w600),
-                          textAlign: TextAlign.center,
+            child: DismissKeyboardOnPointer(
+              child: _items.isEmpty
+                  ? Center(
+                      child: Text(
+                        showingHistory
+                            ? 'Nema zapisa u ovoj istoriji.'
+                            : 'Lista je prazna. Skenirajte košnicu.',
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.w600,
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                        itemCount: visible.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 10),
-                        itemBuilder: (context, i) {
-                          final item = visible[i];
-                          final hive = _hives[item.hiveUuid];
-                          final apiary = hive == null ? null : _apiaries[hive.apiaryUuid];
-                          final queen = _queens[item.hiveUuid];
-                          final statusColor = _statusColor(item, color);
-                          return Material(
-                            color: statusColor.withValues(alpha: item.isActive ? 0.12 : 0.08),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : visible.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Nema rezultata za „$q”.',
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                      itemCount: visible.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, i) {
+                        final item = visible[i];
+                        final hive = _hives[item.hiveUuid];
+                        final apiary = hive == null
+                            ? null
+                            : _apiaries[hive.apiaryUuid];
+                        final queen = _queens[item.hiveUuid];
+                        final statusColor = _statusColor(item, color);
+                        return Material(
+                          color: statusColor.withValues(
+                            alpha: item.isActive ? 0.12 : 0.08,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
                             borderRadius: BorderRadius.circular(14),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(14),
-                              onTap: hive == null
-                                  ? null
-                                  : () async {
-                                      await Navigator.push(context, MaterialPageRoute(builder: (_) => HiveScreen(hiveUuid: hive.uuid)));
-                                      _reload();
-                                    },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border(left: BorderSide(color: statusColor, width: 7)),
-                                ),
-                                padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  hive == null
-                                                      ? item.hiveUuid
-                                                      : '${hive.orderNumber} · ${hive.barcode}',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w800,
-                                                    fontSize: 16,
-                                                    color: statusColor,
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                decoration: BoxDecoration(
-                                                  color: statusColor,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: Text(
-                                                  item.statusLabel,
-                                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          ..._detailRows(item, hive, apiary, queen),
-                                        ],
+                            onTap: hive == null
+                                ? null
+                                : () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            HiveScreen(hiveUuid: hive.uuid),
                                       ),
-                                    ),
-                                    if (item.isActive)
-                                      PopupMenuButton<String>(
-                                        onSelected: (v) async {
-                                          if (v == 'edit') await _editMembership(item);
-                                          if (v == 'finish') await _closeMembership(item, 'FINISHED');
-                                          if (v == 'remove') await _closeMembership(item, 'REMOVED');
-                                          if (v == 'purge') await _deleteWithoutHistory(item);
-                                          if (v == 'laid') await _closeMembership(item, 'FINISHED', queenLaid: true);
-                                        },
-                                        itemBuilder: (_) => [
-                                          const PopupMenuItem(value: 'edit', child: Text('Izmeni')),
-                                          const PopupMenuItem(value: 'finish', child: Text('Završi (kraj u grupi)')),
-                                          const PopupMenuItem(value: 'remove', child: Text('Ukloni (dodata greškom)')),
-                                          const PopupMenuItem(value: 'purge', child: Text('Obriši bez istorije')),
-                                          if (widget.groupType == 'QUEEN_CHANGE')
-                                            const PopupMenuItem(value: 'laid', child: Text('Matica je pronela')),
-                                        ],
-                                      )
-                                    else
-                                      PopupMenuButton<String>(
-                                        onSelected: (v) async {
-                                          if (v == 'purge') await _deleteWithoutHistory(item);
-                                        },
-                                        itemBuilder: (_) => const [
-                                          PopupMenuItem(value: 'purge', child: Text('Obriši bez istorije')),
-                                        ],
-                                      ),
-                                  ],
+                                    );
+                                    _reload();
+                                  },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border(
+                                  left: BorderSide(
+                                    color: statusColor,
+                                    width: 7,
+                                  ),
                                 ),
                               ),
+                              padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                hive == null
+                                                    ? item.hiveUuid
+                                                    : '${hive.orderNumber} · ${hive.barcode}',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 16,
+                                                  color: statusColor,
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 3,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: statusColor,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                item.statusLabel,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        ..._detailRows(
+                                          item,
+                                          hive,
+                                          apiary,
+                                          queen,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (item.isActive)
+                                    PopupMenuButton<String>(
+                                      onSelected: (v) async {
+                                        if (v == 'edit')
+                                          await _editMembership(item);
+                                        if (v == 'inspect')
+                                          await _createInspectionFromGroup(
+                                            item,
+                                          );
+                                        if (v == 'finish')
+                                          await _closeMembership(
+                                            item,
+                                            'FINISHED',
+                                          );
+                                        if (v == 'remove')
+                                          await _closeMembership(
+                                            item,
+                                            'REMOVED',
+                                          );
+                                        if (v == 'purge')
+                                          await _deleteWithoutHistory(item);
+                                        if (v == 'laid')
+                                          await _closeMembership(
+                                            item,
+                                            'FINISHED',
+                                            queenLaid: true,
+                                          );
+                                      },
+                                      itemBuilder: (_) => [
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: Text('Izmeni'),
+                                        ),
+                                        if (widget.groupType == 'CONTROL')
+                                          const PopupMenuItem(
+                                            value: 'inspect',
+                                            child: Text('Evidentiraj kontrolu'),
+                                          ),
+                                        const PopupMenuItem(
+                                          value: 'finish',
+                                          child: Text('Završi (kraj u grupi)'),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'remove',
+                                          child: Text(
+                                            'Ukloni (dodata greškom)',
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'purge',
+                                          child: Text('Obriši bez istorije'),
+                                        ),
+                                        if (widget.groupType == 'QUEEN_CHANGE')
+                                          const PopupMenuItem(
+                                            value: 'laid',
+                                            child: Text('Matica je pronela'),
+                                          ),
+                                      ],
+                                    )
+                                  else
+                                    PopupMenuButton<String>(
+                                      onSelected: (v) async {
+                                        if (v == 'purge')
+                                          await _deleteWithoutHistory(item);
+                                      },
+                                      itemBuilder: (_) => const [
+                                        PopupMenuItem(
+                                          value: 'purge',
+                                          child: Text('Obriši bez istorije'),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),
@@ -958,6 +1462,62 @@ class _FilterChip extends StatelessWidget {
         ),
         side: BorderSide(color: color),
       ),
+    );
+  }
+}
+
+class _PendingHiveList extends StatelessWidget {
+  const _PendingHiveList({
+    required this.hives,
+    required this.emptyText,
+    required this.onRemove,
+  });
+
+  final List<Hive> hives;
+  final String emptyText;
+  final void Function(int index) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    if (hives.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            emptyText,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppTheme.muted(context)),
+          ),
+        ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      itemCount: hives.length,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, i) {
+        final hive = hives[i];
+        return ListTile(
+          dense: true,
+          leading: CircleAvatar(
+            radius: 14,
+            child: Text(
+              '${i + 1}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+            ),
+          ),
+          title: Text(
+            '${hive.barcode} · ${hive.hiveType}',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text('Košnica ${hive.orderNumber}'),
+          trailing: IconButton(
+            tooltip: 'Ukloni',
+            icon: const Icon(Icons.close),
+            onPressed: () => onRemove(i),
+          ),
+        );
+      },
     );
   }
 }

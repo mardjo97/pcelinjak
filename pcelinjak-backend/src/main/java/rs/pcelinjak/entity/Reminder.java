@@ -16,6 +16,9 @@ public class Reminder extends SyncEntity {
     @Column(name = "group_hive_uuid", length = 36)
     public String groupHiveUuid;
 
+    @Column(name = "inspection_uuid", length = 36)
+    public String inspectionUuid;
+
     @Column(name = "due_at", nullable = false)
     public Instant dueAt;
 

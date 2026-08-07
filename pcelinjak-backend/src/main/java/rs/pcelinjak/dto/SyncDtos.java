@@ -60,6 +60,22 @@ public class SyncDtos {
         public String workGroupHiveUuid;
     }
 
+    public static class InspectionItem extends SyncMeta {
+        public String hiveUuid;
+        public Instant inspectedAt;
+        public String summary;
+        public String outcomeStatus;
+        public String queenStatus;
+        public String broodStatus;
+        public String foodStatus;
+        public String temperStatus;
+        public String strengthStatus;
+        public Instant followUpAt;
+        public String sourceType;
+        public String sourceGroupHiveUuid;
+        public String sourceReminderUuid;
+    }
+
     public static class WorkGroupItem extends SyncMeta {
         public String groupType;
         public String pastureType;
@@ -85,6 +101,7 @@ public class SyncDtos {
     public static class ReminderItem extends SyncMeta {
         public String hiveUuid;
         public String groupHiveUuid;
+        public String inspectionUuid;
         public Instant dueAt;
         public String title;
         public boolean completed;

@@ -18,6 +18,7 @@ import rs.pcelinjak.dto.AuthDto;
 import rs.pcelinjak.entity.Apiary;
 import rs.pcelinjak.entity.Harvest;
 import rs.pcelinjak.entity.Hive;
+import rs.pcelinjak.entity.Inspection;
 import rs.pcelinjak.entity.Note;
 import rs.pcelinjak.entity.Queen;
 import rs.pcelinjak.entity.Reminder;
@@ -139,6 +140,7 @@ public class AuthResource {
         }
 
         Reminder.delete("userId", userId);
+        Inspection.delete("userId", userId);
         WorkGroupHive.delete("userId", userId);
         WorkGroup.delete("userId", userId);
         Harvest.delete("userId", userId);

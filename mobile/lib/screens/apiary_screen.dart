@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../database/app_database.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/apiary_edit_dialog.dart';
-import '../widgets/barcode_scan.dart';
-import '../widgets/form_spaced_column.dart';
 import '../widgets/home_fab.dart';
+import '../widgets/keyboard_dismiss.dart';
 import 'hive_screen.dart';
 
 class ApiaryScreen extends StatefulWidget {
@@ -26,6 +26,7 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
   Apiary? _apiary;
   List<Hive> _hives = [];
   final Map<String, Queen> _queens = {};
+
   /// ACTIVE | ARCHIVED | DEAD | ALL
   String _statusFilter = 'ACTIVE';
   Timer? _debounce;
@@ -84,9 +85,20 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
     final q = _searchCtrl.text.trim().toLowerCase();
     if (q.isEmpty) return list.toList();
 
-    final markedWanted = const ['markir', 'oznac', 'označ', 'marked', 'obelez', 'obelež']
-        .any((k) => q.contains(k));
-    final unmarkedWanted = const ['nemark', 'neoznac', 'neoznač', 'unmarked'].any((k) => q.contains(k));
+    final markedWanted = const [
+      'markir',
+      'oznac',
+      'označ',
+      'marked',
+      'obelez',
+      'obelež',
+    ].any((k) => q.contains(k));
+    final unmarkedWanted = const [
+      'nemark',
+      'neoznac',
+      'neoznač',
+      'unmarked',
+    ].any((k) => q.contains(k));
 
     return list.where((h) {
       final queen = _queens[h.uuid];
@@ -129,93 +141,244 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
     if (updated != null) await _reload();
   }
 
-  Future<void> _addHive({String? presetBarcode}) async {
-    final barcodeCtrl = TextEditingController(text: presetBarcode ?? '');
-    String type = hiveTypes.first;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Nova košnica'),
-          content: FormSpacedColumn(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: barcodeCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Barkod'),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.qr_code_scanner),
-                    onPressed: () async {
-                      final code = await scanBarcode(context);
-                      if (code != null) barcodeCtrl.text = code;
-                    },
-                  ),
-                ],
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: type,
-                items: hiveTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                onChanged: (v) => setLocal(() => type = v ?? type),
-                decoration: const InputDecoration(labelText: 'Tip košnice'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sačuvaj')),
-          ],
-        ),
-      ),
-    );
-    if (ok != true || barcodeCtrl.text.trim().isEmpty) return;
-    final existing = await db.findHiveByBarcode(barcodeCtrl.text.trim());
-    if (existing != null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Barkod već postoji')));
-      return;
+  Future<void> _pickAddHiveMode() async {
+    final db = AppDatabase.instance;
+    final manualCtrl = TextEditingController();
+    var type = hiveTypes.first;
+    var scanMany = false;
+    var flash = '';
+    final codes = <String>[];
+    DateTime? cooldownUntil;
+
+    Future<void> appendCode(StateSetter setLocal, String raw) async {
+      final code = raw.trim();
+      if (code.isEmpty) return;
+      final existing = await db.findHiveByBarcode(code);
+      if (existing != null) {
+        setLocal(() => flash = 'Barkod već postoji: $code');
+        return;
+      }
+      if (codes.contains(code)) {
+        setLocal(() => flash = 'Već dodato u listu: $code');
+        return;
+      }
+      setLocal(() {
+        codes.add(code);
+        flash = 'Dodato: $code';
+      });
     }
-    final order = await db.nextHiveOrder(widget.apiaryUuid);
-    final hive = Hive(
-      uuid: db.newUuid(),
-      barcode: barcodeCtrl.text.trim(),
-      orderNumber: order,
-      hiveType: type,
-      apiaryUuid: widget.apiaryUuid,
-      status: 'ACTIVE',
-    );
-    await db.upsertHive(hive);
-    await _reload();
-  }
 
-  Future<void> _addManyHives() async {
-    String type = hiveTypes.first;
-    final typeOk = await showDialog<bool>(
+    final saved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Dodaj više košnica'),
-          content: DropdownButtonFormField<String>(
-            initialValue: type,
-            items: hiveTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-            onChanged: (v) => setLocal(() => type = v ?? type),
-            decoration: const InputDecoration(labelText: 'Tip za sve skenirane'),
+      builder: (ctx) => Dialog.fullscreen(
+        child: StatefulBuilder(
+          builder: (ctx, setLocal) => DefaultTabController(
+            length: 2,
+            child: UnfocusOnTabChange(
+              child: Scaffold(
+                appBar: AppBar(
+                  title: const Text('Dodaj košnice'),
+                  bottom: const TabBar(
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white70,
+                    indicatorColor: AppColors.honey,
+                    indicatorWeight: 3,
+                    tabs: [
+                      Tab(text: 'Scan', icon: Icon(Icons.qr_code_scanner)),
+                      Tab(text: 'Ručno', icon: Icon(Icons.keyboard)),
+                    ],
+                  ),
+                ),
+                body: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: DropdownButtonFormField<String>(
+                        initialValue: type,
+                        items: hiveTypes
+                            .map(
+                              (t) => DropdownMenuItem(value: t, child: Text(t)),
+                            )
+                            .toList(),
+                        onChanged: (v) => setLocal(() => type = v ?? type),
+                        decoration: const InputDecoration(
+                          labelText: 'Tip košnice',
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          Column(
+                            children: [
+                              CheckboxListTile(
+                                value: scanMany,
+                                title: const Text('Skeniraj više'),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                onChanged: (v) =>
+                                    setLocal(() => scanMany = v ?? false),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: DismissKeyboardOnPointer(
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      MobileScanner(
+                                        onDetect: (capture) async {
+                                          final raw = capture
+                                              .barcodes
+                                              .firstOrNull
+                                              ?.rawValue
+                                              ?.trim();
+                                          if (raw == null || raw.isEmpty)
+                                            return;
+                                          final now = DateTime.now();
+                                          if (cooldownUntil != null &&
+                                              now.isBefore(cooldownUntil!)) {
+                                            return;
+                                          }
+                                          cooldownUntil = now.add(
+                                            Duration(
+                                              milliseconds: scanMany
+                                                  ? 1400
+                                                  : 1800,
+                                            ),
+                                          );
+                                          await appendCode(setLocal, raw);
+                                        },
+                                      ),
+                                      if (flash.isNotEmpty)
+                                        Positioned(
+                                          left: 12,
+                                          right: 12,
+                                          bottom: 12,
+                                          child: Material(
+                                            color: Colors.black87,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
+                                              child: Text(
+                                                flash,
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: DismissKeyboardOnPointer(
+                                  child: _PendingCodeList(
+                                    codes: codes,
+                                    emptyText:
+                                        'Skenirajte barkodove za dodavanje.',
+                                    onRemove: (i) =>
+                                        setLocal(() => codes.removeAt(i)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                TextField(
+                                  controller: manualCtrl,
+                                  keyboardType: TextInputType.number,
+                                  onTapOutside: dismissKeyboardOnTapOutside,
+                                  decoration: InputDecoration(
+                                    labelText: 'Barkod',
+                                    suffixIcon: IgnoreKeyboardDismiss(
+                                      child: IconButton(
+                                        icon: const Icon(Icons.add),
+                                        onPressed: () async {
+                                          await appendCode(
+                                            setLocal,
+                                            manualCtrl.text,
+                                          );
+                                          manualCtrl.clear();
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  onSubmitted: (_) async {
+                                    await appendCode(setLocal, manualCtrl.text);
+                                    manualCtrl.clear();
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                Expanded(
+                                  child: DismissKeyboardOnPointer(
+                                    child: _PendingCodeList(
+                                      codes: codes,
+                                      emptyText:
+                                          'Ručno unesite barkod i dodajte ga u listu.',
+                                      onRemove: (i) =>
+                                          setLocal(() => codes.removeAt(i)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Otkaži'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: codes.isEmpty
+                                    ? null
+                                    : () => Navigator.pop(ctx, true),
+                                child: Text(
+                                  codes.length == 1
+                                      ? 'Dodaj 1 košnicu'
+                                      : 'Dodaj ${codes.length} košnica',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Otkaži')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Skeniraj')),
-          ],
         ),
       ),
     );
-    if (typeOk != true || !mounted) return;
-
-    final codes = await scanBarcodesContinuous(context, title: 'Skeniraj košnice · $type');
-    if (codes == null || codes.isEmpty || !mounted) return;
+    if (saved != true) return;
 
     var created = 0;
     var skipped = 0;
@@ -226,14 +389,16 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
         skipped++;
         continue;
       }
-      await db.upsertHive(Hive(
-        uuid: db.newUuid(),
-        barcode: code,
-        orderNumber: order,
-        hiveType: type,
-        apiaryUuid: widget.apiaryUuid,
-        status: 'ACTIVE',
-      ));
+      await db.upsertHive(
+        Hive(
+          uuid: db.newUuid(),
+          barcode: code,
+          orderNumber: order,
+          hiveType: type,
+          apiaryUuid: widget.apiaryUuid,
+          status: 'ACTIVE',
+        ),
+      );
       order++;
       created++;
     }
@@ -241,34 +406,8 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
     if (!mounted) return;
     final msg = skipped == 0
         ? 'Dodato $created košnica ($type).'
-        : 'Dodato $created · preskočeno $skipped (već postoje).';
+        : 'Dodato $created · preskočeno $skipped.';
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  Future<void> _pickAddHiveMode() async {
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('Jedna košnica'),
-              onTap: () => Navigator.pop(ctx, 'one'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.qr_code_scanner),
-              title: const Text('Više košnica (sken)'),
-              subtitle: const Text('Kontinuirano skeniranje, isti tip'),
-              onTap: () => Navigator.pop(ctx, 'many'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (choice == 'one') await _addHive();
-    if (choice == 'many') await _addManyHives();
   }
 
   @override
@@ -278,7 +417,9 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
     final q = _searchCtrl.text.trim();
     return Scaffold(
       appBar: AppBar(
-        title: Text(a == null ? 'Pčelinjak' : 'Pčelinjak ${a.workNumber} · ${a.name}'),
+        title: Text(
+          a == null ? 'Pčelinjak' : 'Pčelinjak ${a.workNumber} · ${a.name}',
+        ),
         actions: [
           IconButton(
             tooltip: 'Izmeni pčelinjak',
@@ -288,7 +429,7 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
           IconButton(
             tooltip: 'Dodaj više skeniranjem',
             icon: const Icon(Icons.qr_code_scanner),
-            onPressed: _addManyHives,
+            onPressed: _pickAddHiveMode,
           ),
         ],
       ),
@@ -343,6 +484,7 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
             child: TextField(
               controller: _searchCtrl,
               onChanged: _onSearchChanged,
+              onTapOutside: dismissKeyboardOnTapOutside,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Barkod, tip, RB, matica…',
@@ -367,104 +509,165 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   '${visible.length} košnica',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted(context)),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.muted(context),
+                  ),
                 ),
               ),
             ),
           Expanded(
-            child: _hives.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Nema košnica. Skenirajte barkodove redom.',
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                : visible.isEmpty
-                    ? Center(
-                        child: Text(
-                          q.isNotEmpty
-                              ? 'Nema rezultata za „$q”.'
-                              : 'Nema košnica za ovaj status.',
-                          textAlign: TextAlign.center,
+            child: DismissKeyboardOnPointer(
+              child: _hives.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Nema košnica. Skenirajte barkodove redom.',
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : visible.isEmpty
+                  ? Center(
+                      child: Text(
+                        q.isNotEmpty
+                            ? 'Nema rezultata za „$q”.'
+                            : 'Nema košnica za ovaj status.',
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                      children: [
+                        const Row(
+                          children: [
+                            Expanded(
+                              flex: 1,
+                              child: Text(
+                                'RB',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                'TIP',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                'KOD',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                '',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
-                      )
-                    : ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                        children: [
-                          const Row(
-                            children: [
-                              Expanded(flex: 1, child: Text('RB', style: TextStyle(fontWeight: FontWeight.bold))),
-                              Expanded(flex: 2, child: Text('TIP', style: TextStyle(fontWeight: FontWeight.bold))),
-                              Expanded(flex: 3, child: Text('KOD', style: TextStyle(fontWeight: FontWeight.bold))),
-                              Expanded(flex: 2, child: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
-                            ],
-                          ),
-                          const Divider(),
-                          ...visible.map((h) {
-                            final status = h.status.isEmpty ? 'ACTIVE' : h.status;
-                            final color = _statusColor(status);
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6),
-                              child: Material(
-                                color: color.withValues(alpha: 0.10),
+                        const Divider(),
+                        ...visible.map((h) {
+                          final contextHiveUuids = visible
+                              .map((item) => item.uuid)
+                              .toList(growable: false);
+                          final status = h.status.isEmpty ? 'ACTIVE' : h.status;
+                          final color = _statusColor(status);
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Material(
+                              color: color.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
                                 borderRadius: BorderRadius.circular(12),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(12),
-                                  onTap: () async {
-                                    await Navigator.push(context, MaterialPageRoute(builder: (_) => HiveScreen(hiveUuid: h.uuid)));
-                                    _reload();
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border(left: BorderSide(color: color, width: 7)),
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => HiveScreen(
+                                        hiveUuid: h.uuid,
+                                        contextHiveUuids: contextHiveUuids,
+                                      ),
                                     ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          flex: 1,
-                                          child: Text(
-                                            '${h.orderNumber}',
-                                            style: TextStyle(fontWeight: FontWeight.w800, color: color),
+                                  );
+                                  _reload();
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border(
+                                      left: BorderSide(color: color, width: 7),
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 1,
+                                        child: Text(
+                                          '${h.orderNumber}',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            color: color,
                                           ),
                                         ),
-                                        Expanded(flex: 2, child: Text(h.hiveType)),
-                                        Expanded(
-                                          flex: 3,
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(h.barcode, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                              const SizedBox(height: 2),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: color,
-                                                  borderRadius: BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  hiveStatuses[status] ?? status,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w800,
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(h.hiveType),
+                                      ),
+                                      Expanded(
+                                        flex: 3,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              h.barcode,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 7,
+                                                    vertical: 2,
                                                   ),
+                                              decoration: BoxDecoration(
+                                                color: color,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                hiveStatuses[status] ?? status,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
                                                 ),
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
-                                        Icon(Icons.chevron_right, color: color),
-                                      ],
-                                    ),
+                                      ),
+                                      Icon(Icons.chevron_right, color: color),
+                                    ],
                                   ),
                                 ),
                               ),
-                            );
-                          }),
-                        ],
-                      ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+            ),
           ),
         ],
       ),
@@ -500,6 +703,58 @@ class _StatusChip extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
         side: BorderSide(color: color),
+      ),
+    );
+  }
+}
+
+class _PendingCodeList extends StatelessWidget {
+  const _PendingCodeList({
+    required this.codes,
+    required this.emptyText,
+    required this.onRemove,
+  });
+
+  final List<String> codes;
+  final String emptyText;
+  final void Function(int index) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    if (codes.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            emptyText,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppTheme.muted(context)),
+          ),
+        ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      itemCount: codes.length,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, i) => ListTile(
+        dense: true,
+        leading: CircleAvatar(
+          radius: 14,
+          child: Text(
+            '${i + 1}',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+          ),
+        ),
+        title: Text(
+          codes[i],
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        trailing: IconButton(
+          tooltip: 'Ukloni',
+          icon: const Icon(Icons.close),
+          onPressed: () => onRemove(i),
+        ),
       ),
     );
   }

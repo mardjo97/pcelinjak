@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/barcode_scan.dart';
 import '../widgets/home_fab.dart';
+import '../widgets/keyboard_dismiss.dart';
 import 'hive_screen.dart';
 
 class HiveSearchScreen extends StatefulWidget {
@@ -65,7 +66,10 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
   }
 
   Future<void> _open(HiveSearchHit hit) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => HiveScreen(hiveUuid: hit.hive.uuid)));
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => HiveScreen(hiveUuid: hit.hive.uuid)),
+    );
     _search(_ctrl.text);
   }
 
@@ -93,6 +97,7 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
               controller: _ctrl,
               focusNode: _focus,
               onChanged: _onQueryChanged,
+              onTapOutside: dismissKeyboardOnTapOutside,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Barkod, pčelinjak, tip, matica…',
@@ -125,63 +130,84 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
               q.isEmpty
                   ? 'Sve košnice · filtrirajte po barkodu, imenu/RB pčelinjaka, tipu (LR, DB…), godini matice, poreklu, „markirana“…'
                   : '${_hits.length} rezultat${_hits.length == 1 ? '' : 'a'}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted(context)),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.muted(context)),
             ),
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _hits.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            q.isEmpty ? 'Nema košnica.' : 'Nema rezultata za „$q”.',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
+            child: DismissKeyboardOnPointer(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _hits.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          q.isEmpty
+                              ? 'Nema košnica.'
+                              : 'Nema rezultata za „$q”.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyLarge,
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                        itemCount: _hits.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 8),
-                        itemBuilder: (context, i) {
-                          final hit = _hits[i];
-                          final h = hit.hive;
-                          final a = hit.apiary;
-                          final status = hiveStatuses[h.status] ?? h.status;
-                          return Material(
-                            color: AppTheme.card(context),
-                            borderRadius: BorderRadius.circular(14),
-                            child: ListTile(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              leading: CircleAvatar(
-                                backgroundColor: AppTheme.tintedSurface(context, AppColors.mist),
-                                foregroundColor: AppTheme.isDark(context)
-                                    ? Theme.of(context).colorScheme.onSurface
-                                    : AppColors.meadowDark,
-                                child: Text('${h.orderNumber}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-                              ),
-                              title: Text(
-                                '${h.barcode} · ${h.hiveType}',
-                                style: const TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                              subtitle: Text(
-                                [
-                                  if (a != null) 'Pčelinjak ${a.workNumber} · ${a.name}',
-                                  _queenLine(hit.queen),
-                                  if (h.status != 'ACTIVE') status,
-                                ].join('\n'),
-                              ),
-                              isThreeLine: true,
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () => _open(hit),
-                            ),
-                          );
-                        },
                       ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                      itemCount: _hits.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, i) {
+                        final hit = _hits[i];
+                        final h = hit.hive;
+                        final a = hit.apiary;
+                        final status = hiveStatuses[h.status] ?? h.status;
+                        return Material(
+                          color: AppTheme.card(context),
+                          borderRadius: BorderRadius.circular(14),
+                          child: ListTile(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            leading: CircleAvatar(
+                              backgroundColor: AppTheme.tintedSurface(
+                                context,
+                                AppColors.mist,
+                              ),
+                              foregroundColor: AppTheme.isDark(context)
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : AppColors.meadowDark,
+                              child: Text(
+                                '${h.orderNumber}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              '${h.barcode} · ${h.hiveType}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            subtitle: Text(
+                              [
+                                if (a != null)
+                                  'Pčelinjak ${a.workNumber} · ${a.name}',
+                                _queenLine(hit.queen),
+                                if (h.status != 'ACTIVE') status,
+                              ].join('\n'),
+                            ),
+                            isThreeLine: true,
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => _open(hit),
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),

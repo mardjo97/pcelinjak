@@ -13,6 +13,7 @@ import 'services/push_device_service.dart';
 import 'services/reminder_service.dart';
 import 'services/theme_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/keyboard_dismiss.dart';
 
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,9 @@ class PcelinjakApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
+          builder: (context, child) => KeyboardDismissScope(
+            child: child ?? const SizedBox.shrink(),
+          ),
           home: startHome ? HomeScreen(api: api) : AuthScreen(api: api),
         );
       },

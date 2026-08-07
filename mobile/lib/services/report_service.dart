@@ -21,6 +21,7 @@ enum ReportType {
   harvestByPasture,
   prijavaStanja,
   queensOverview,
+  movedHistory,
 }
 
 enum ReportFormat { pdf, docx, csv }
@@ -34,6 +35,8 @@ extension ReportTypeX on ReportType {
         return l10n.reportPrijavaTitle;
       case ReportType.queensOverview:
         return l10n.reportQueensTitle;
+      case ReportType.movedHistory:
+        return 'Istorija selidbi';
     }
   }
 
@@ -45,6 +48,8 @@ extension ReportTypeX on ReportType {
         return l10n.reportPrijavaSubtitle;
       case ReportType.queensOverview:
         return l10n.reportQueensSubtitle;
+      case ReportType.movedHistory:
+        return 'Sve selidbe košnica po lokaciji, paši i periodu';
     }
   }
 
@@ -57,6 +62,8 @@ extension ReportTypeX on ReportType {
         return 'Prijava stanja (Prilog 4)';
       case ReportType.queensOverview:
         return 'Pregled matica';
+      case ReportType.movedHistory:
+        return 'Istorija selidbi';
     }
   }
 
@@ -68,6 +75,8 @@ extension ReportTypeX on ReportType {
         return 'Obrazac sa barkodovima aktivnih košnica — po pčelinjaku';
       case ReportType.queensOverview:
         return 'Godina, markiranje i poreklo aktivnih matica';
+      case ReportType.movedHistory:
+        return 'Pregled svih selidbi po košnici, lokaciji i periodu';
     }
   }
 }
@@ -140,12 +149,21 @@ class ReportService {
     final bytes = switch (format) {
       ReportFormat.pdf => await _buildPdf(type, prijava: prijava),
       ReportFormat.docx => await _buildDocx(type, prijava: prijava),
-      ReportFormat.csv => Uint8List.fromList([0xEF, 0xBB, 0xBF, ...utf8.encode(await _buildCsv(type, prijava: prijava))]),
+      ReportFormat.csv => Uint8List.fromList([
+        0xEF,
+        0xBB,
+        0xBF,
+        ...utf8.encode(await _buildCsv(type, prijava: prijava)),
+      ]),
     };
     await _shareBytes(bytes, '$name.${format.extension}', format.mime);
   }
 
-  Future<void> _shareBytes(Uint8List bytes, String filename, String mime) async {
+  Future<void> _shareBytes(
+    Uint8List bytes,
+    String filename,
+    String mime,
+  ) async {
     final dir = await getTemporaryDirectory();
     final file = File(p.join(dir.path, filename));
     await file.writeAsBytes(bytes, flush: true);
@@ -162,6 +180,7 @@ class ReportService {
       ReportType.harvestByPasture => 'prinos_$year',
       ReportType.prijavaStanja => 'prijava_stanja',
       ReportType.queensOverview => 'matice',
+      ReportType.movedHistory => 'istorija_selidbi',
     };
     return 'pcelinjak_$slug';
   }
@@ -180,7 +199,10 @@ class ReportService {
 
   // ─── PDF ─────────────────────────────────────────────────────────────
 
-  Future<Uint8List> _buildPdf(ReportType type, {PrijavaStanjaOptions? prijava}) async {
+  Future<Uint8List> _buildPdf(
+    ReportType type, {
+    PrijavaStanjaOptions? prijava,
+  }) async {
     final font = await PdfGoogleFonts.notoSansRegular();
     final fontBold = await PdfGoogleFonts.notoSansBold();
     final theme = pw.ThemeData.withFont(base: font, bold: fontBold);
@@ -195,6 +217,7 @@ class ReportService {
       final body = switch (type) {
         ReportType.harvestByPasture => await _harvestPdf(year),
         ReportType.queensOverview => await _queensPdf(),
+        ReportType.movedHistory => await _movedHistoryPdf(),
         ReportType.prijavaStanja => <pw.Widget>[],
       };
       doc.addPage(
@@ -202,11 +225,20 @@ class ReportService {
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
           build: (ctx) => [
-            pw.Text('Pčelinjak — ${type.documentTitle}', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'Pčelinjak — ${type.documentTitle}',
+              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+            ),
             pw.SizedBox(height: 4),
-            pw.Text(type.documentSubtitle, style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
+            pw.Text(
+              type.documentSubtitle,
+              style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+            ),
             pw.SizedBox(height: 4),
-            pw.Text('Generisano: $generatedAt', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+            pw.Text(
+              'Generisano: $generatedAt',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            ),
             pw.SizedBox(height: 16),
             ...body,
           ],
@@ -216,10 +248,18 @@ class ReportService {
     return Uint8List.fromList(await doc.save());
   }
 
-  Future<void> _addPrijavaPdfPages(pw.Document doc, PrijavaStanjaOptions opts) async {
+  Future<void> _addPrijavaPdfPages(
+    pw.Document doc,
+    PrijavaStanjaOptions opts,
+  ) async {
     final pages = await _prijavaPages(opts);
     if (pages.isEmpty) {
-      doc.addPage(pw.Page(pageFormat: PdfPageFormat.a4, build: (_) => pw.Center(child: pw.Text('Nema izabranih pčelinjaka.'))));
+      doc.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (_) => pw.Center(child: pw.Text('Nema izabranih pčelinjaka.')),
+        ),
+      );
       return;
     }
     for (final page in pages) {
@@ -235,7 +275,10 @@ class ReportService {
 
   // ─── DOCX ────────────────────────────────────────────────────────────
 
-  Future<Uint8List> _buildDocx(ReportType type, {PrijavaStanjaOptions? prijava}) async {
+  Future<Uint8List> _buildDocx(
+    ReportType type, {
+    PrijavaStanjaOptions? prijava,
+  }) async {
     final doc = DocxBuilder();
     final year = DateTime.now().year;
     final generatedAt = _dateFmt.format(DateTime.now());
@@ -258,6 +301,8 @@ class ReportService {
       doc.emptyLine();
       if (type == ReportType.harvestByPasture) {
         await _harvestDocx(doc, year);
+      } else if (type == ReportType.movedHistory) {
+        await _movedHistoryDocx(doc);
       } else {
         await _queensDocx(doc);
       }
@@ -267,12 +312,18 @@ class ReportService {
 
   // ─── CSV ─────────────────────────────────────────────────────────────
 
-  Future<String> _buildCsv(ReportType type, {PrijavaStanjaOptions? prijava}) async {
+  Future<String> _buildCsv(
+    ReportType type, {
+    PrijavaStanjaOptions? prijava,
+  }) async {
     final year = DateTime.now().year;
     return switch (type) {
       ReportType.harvestByPasture => await _harvestCsv(year),
       ReportType.queensOverview => await _queensCsv(),
-      ReportType.prijavaStanja => await _prijavaCsv(prijava ?? await _prijavaFromConfig()),
+      ReportType.prijavaStanja => await _prijavaCsv(
+        prijava ?? await _prijavaFromConfig(),
+      ),
+      ReportType.movedHistory => await _movedHistoryCsv(),
     };
   }
 
@@ -280,18 +331,24 @@ class ReportService {
 
   Future<List<_PrijavaPage>> _prijavaPages(PrijavaStanjaOptions opts) async {
     final all = await db.listApiaries();
-    final selected = all.where((a) => opts.apiaryUuids.contains(a.uuid)).toList()
-      ..sort((a, b) => a.workNumber.compareTo(b.workNumber));
+    final selected =
+        all.where((a) => opts.apiaryUuids.contains(a.uuid)).toList()
+          ..sort((a, b) => a.workNumber.compareTo(b.workNumber));
     final out = <_PrijavaPage>[];
     for (final a in selected) {
       final hives = await db.listHives(a.uuid, activeOnly: true);
-      out.add(_PrijavaPage(
-        apiary: a,
-        barcodes: hives.map((h) => h.barcode).where((b) => b.trim().isNotEmpty).toList(),
-        beekeeperName: opts.beekeeperName,
-        hid: opts.hid,
-        asOf: opts.asOf,
-      ));
+      out.add(
+        _PrijavaPage(
+          apiary: a,
+          barcodes: hives
+              .map((h) => h.barcode)
+              .where((b) => b.trim().isNotEmpty)
+              .toList(),
+          beekeeperName: opts.beekeeperName,
+          hid: opts.hid,
+          asOf: opts.asOf,
+        ),
+      );
     }
     return out;
   }
@@ -304,12 +361,14 @@ class ReportService {
     for (final h in hives) {
       final harvests = await db.harvestsForHive(h.uuid, year: year);
       for (final hv in harvests) {
-        rows.add(_HarvestAgg(
-          apiary: apiaryById[h.apiaryUuid]?.name ?? '—',
-          workNumber: apiaryById[h.apiaryUuid]?.workNumber ?? 0,
-          pasture: hv.pastureType,
-          kg: hv.amountKg,
-        ));
+        rows.add(
+          _HarvestAgg(
+            apiary: apiaryById[h.apiaryUuid]?.name ?? '—',
+            workNumber: apiaryById[h.apiaryUuid]?.workNumber ?? 0,
+            pasture: hv.pastureType,
+            kg: hv.amountKg,
+          ),
+        );
       }
     }
     final map = <String, double>{};
@@ -323,7 +382,12 @@ class ReportService {
       pastureTotals[r.pasture] = (pastureTotals[r.pasture] ?? 0) + r.kg;
     }
     final total = rows.fold<double>(0, (s, r) => s + r.kg);
-    return _HarvestData(year: year, total: total, pastureTotals: pastureTotals, byApiary: sorted);
+    return _HarvestData(
+      year: year,
+      total: total,
+      pastureTotals: pastureTotals,
+      byApiary: sorted,
+    );
   }
 
   Future<_QueensData> _queensData() async {
@@ -344,7 +408,14 @@ class ReportService {
       final q = await db.activeQueen(h.uuid);
       final a = apiaries[h.apiaryUuid];
       if (q == null) {
-        data.add(['${a?.workNumber ?? '?'}', '${h.orderNumber}', h.barcode, '—', 'ne', 'bez matice']);
+        data.add([
+          '${a?.workNumber ?? '?'}',
+          '${h.orderNumber}',
+          h.barcode,
+          '—',
+          'ne',
+          'bez matice',
+        ]);
         continue;
       }
       withQueen++;
@@ -361,6 +432,47 @@ class ReportService {
     return _QueensData(rows: data, withQueen: withQueen, marked: marked);
   }
 
+  Future<List<_MovedHistoryRow>> _movedHistoryData() async {
+    final apiaries = {for (final a in await db.listApiaries()) a.uuid: a};
+    final hives = {for (final h in await db.listAllHives()) h.uuid: h};
+    final movedGroups = (await db.listWorkGroups())
+        .where((g) => g.groupType == 'MOVED')
+        .toList();
+
+    final rows = <_MovedHistoryRow>[];
+    for (final group in movedGroups) {
+      final memberships = await db.groupHives(group.uuid, filter: 'ALL');
+      for (final item in memberships) {
+        final hive = hives[item.hiveUuid];
+        if (hive == null) continue;
+        final apiary = apiaries[hive.apiaryUuid];
+        rows.add(
+          _MovedHistoryRow(
+            workNumber: apiary?.workNumber ?? 0,
+            apiaryName: apiary?.name ?? '—',
+            orderNumber: hive.orderNumber,
+            barcode: hive.barcode,
+            pasture: item.pastureType ?? group.pastureType ?? '—',
+            locationName: item.locationName ?? group.locationName ?? '—',
+            activeFrom: item.activeFrom ?? item.dateCreated,
+            activeTo: item.activeTo,
+            status: item.membershipStatus,
+          ),
+        );
+      }
+    }
+
+    rows.sort((a, b) {
+      if (a.workNumber != b.workNumber) {
+        return a.workNumber.compareTo(b.workNumber);
+      }
+      final byOrder = a.orderNumber.compareTo(b.orderNumber);
+      if (byOrder != 0) return byOrder;
+      return b.activeFrom.compareTo(a.activeFrom);
+    });
+    return rows;
+  }
+
   // ─── PDF parts ───────────────────────────────────────────────────────
 
   List<pw.Widget> _prijavaFormPdf(_PrijavaPage page) {
@@ -371,7 +483,11 @@ class ReportService {
       pw.Center(
         child: pw.Text(
           'PRIJAVA STANJA NA PČELINJAKU',
-          style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, letterSpacing: 0.4),
+          style: pw.TextStyle(
+            fontSize: 14,
+            fontWeight: pw.FontWeight.bold,
+            letterSpacing: 0.4,
+          ),
         ),
       ),
       pw.SizedBox(height: 6),
@@ -384,17 +500,29 @@ class ReportService {
                 style: const pw.TextStyle(fontSize: 11),
                 children: [
                   const pw.TextSpan(text: 'na dan  '),
-                  pw.TextSpan(text: day, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.TextSpan(
+                    text: day,
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
                   const pw.TextSpan(text: '.  '),
-                  pw.TextSpan(text: month, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.TextSpan(
+                    text: month,
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
                   const pw.TextSpan(text: '.  '),
-                  pw.TextSpan(text: year, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.TextSpan(
+                    text: year,
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
                   const pw.TextSpan(text: '. godine'),
                 ],
               ),
             ),
           ),
-          pw.Text('PRILOG 4', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+          pw.Text(
+            'PRILOG 4',
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+          ),
         ],
       ),
       pw.SizedBox(height: 14),
@@ -402,19 +530,42 @@ class ReportService {
       pw.SizedBox(height: 8),
       pw.Row(
         children: [
-          pw.SizedBox(width: 210, child: pw.Text('HID (veterinarski broj gazdinstva):', style: const pw.TextStyle(fontSize: 10))),
+          pw.SizedBox(
+            width: 210,
+            child: pw.Text(
+              'HID (veterinarski broj gazdinstva):',
+              style: const pw.TextStyle(fontSize: 10),
+            ),
+          ),
           pw.Expanded(child: _digitBoxes(page.hid, boxes: 12)),
         ],
       ),
       pw.SizedBox(height: 8),
       pw.Row(
         children: [
-          pw.SizedBox(width: 210, child: pw.Text('Ime i prezime pčelara:', style: const pw.TextStyle(fontSize: 10))),
+          pw.SizedBox(
+            width: 210,
+            child: pw.Text(
+              'Ime i prezime pčelara:',
+              style: const pw.TextStyle(fontSize: 10),
+            ),
+          ),
           pw.Expanded(
             child: pw.Container(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(width: 0.7))),
-              child: pw.Text(page.beekeeperName.isEmpty ? ' ' : page.beekeeperName, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 4,
+              ),
+              decoration: const pw.BoxDecoration(
+                border: pw.Border(bottom: pw.BorderSide(width: 0.7)),
+              ),
+              child: pw.Text(
+                page.beekeeperName.isEmpty ? ' ' : page.beekeeperName,
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],
@@ -422,25 +573,42 @@ class ReportService {
       pw.SizedBox(height: 14),
       _sectionHeader('Podaci o pčelinjaku'),
       pw.SizedBox(height: 6),
-      pw.Text('Pčelinjak ${page.apiary.workNumber} · ${page.apiary.name}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+      pw.Text(
+        'Pčelinjak ${page.apiary.workNumber} · ${page.apiary.name}',
+        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+      ),
       pw.SizedBox(height: 6),
       pw.Row(
         children: [
-          pw.SizedBox(width: 210, child: pw.Text('ID broj pčelinjaka:', style: const pw.TextStyle(fontSize: 10))),
-          pw.Expanded(child: _digitBoxes(page.apiary.officialId ?? '', boxes: 12)),
+          pw.SizedBox(
+            width: 210,
+            child: pw.Text(
+              'ID broj pčelinjaka:',
+              style: const pw.TextStyle(fontSize: 10),
+            ),
+          ),
+          pw.Expanded(
+            child: _digitBoxes(page.apiary.officialId ?? '', boxes: 12),
+          ),
         ],
       ),
       pw.SizedBox(height: 14),
       _sectionHeader('Identifikacioni brojevi pčelinjih društava'),
       pw.SizedBox(height: 8),
       if (page.barcodes.isEmpty)
-        pw.Text('Nema aktivnih košnica na ovom pčelinjaku.', style: const pw.TextStyle(fontSize: 10))
+        pw.Text(
+          'Nema aktivnih košnica na ovom pčelinjaku.',
+          style: const pw.TextStyle(fontSize: 10),
+        )
       else
         _barcodeGrid(page.barcodes),
       pw.SizedBox(height: 8),
       pw.Align(
         alignment: pw.Alignment.centerRight,
-        child: pw.Text('Ukupno društava: ${page.barcodes.length}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+        child: pw.Text(
+          'Ukupno društava: ${page.barcodes.length}',
+          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+        ),
       ),
       pw.SizedBox(height: 18),
       pw.Text(
@@ -455,9 +623,18 @@ class ReportService {
         children: [
           pw.Column(
             children: [
-              pw.Container(width: 180, height: 24, decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(width: 0.7)))),
+              pw.Container(
+                width: 180,
+                height: 24,
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(bottom: pw.BorderSide(width: 0.7)),
+                ),
+              ),
               pw.SizedBox(height: 4),
-              pw.Text('Svojeručni potpis pčelara', style: const pw.TextStyle(fontSize: 9)),
+              pw.Text(
+                'Svojeručni potpis pčelara',
+                style: const pw.TextStyle(fontSize: 9),
+              ),
             ],
           ),
         ],
@@ -470,7 +647,9 @@ class ReportService {
     final month = _monthFmt.format(page.asOf);
     final year = _yearFmt.format(page.asOf);
     doc.heading('PRIJAVA STANJA NA PČELINJAKU');
-    doc.paragraph('na dan $day. $month. $year. godine                    PRILOG 4');
+    doc.paragraph(
+      'na dan $day. $month. $year. godine                    PRILOG 4',
+    );
     doc.emptyLine();
     doc.paragraph('Podaci o pčelaru', bold: true);
     doc.paragraph('HID (veterinarski broj gazdinstva): ${page.hid}');
@@ -487,7 +666,9 @@ class ReportService {
       const cols = 4;
       final rows = <List<String>>[];
       for (var i = 0; i < page.barcodes.length; i += cols) {
-        final end = (i + cols < page.barcodes.length) ? i + cols : page.barcodes.length;
+        final end = (i + cols < page.barcodes.length)
+            ? i + cols
+            : page.barcodes.length;
         final row = page.barcodes.sublist(i, end);
         while (row.length < cols) {
           row.add('');
@@ -510,25 +691,47 @@ class ReportService {
   Future<List<pw.Widget>> _harvestPdf(int year) async {
     final d = await _harvestData(year);
     if (d.byApiary.isEmpty) {
-      return [pw.Text('Nema prinosa za $year.', style: const pw.TextStyle(fontSize: 12))];
+      return [
+        pw.Text(
+          'Nema prinosa za $year.',
+          style: const pw.TextStyle(fontSize: 12),
+        ),
+      ];
     }
     return [
-      pw.Text('Godina $year — ukupno ${d.total.toStringAsFixed(1)} kg', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+      pw.Text(
+        'Godina $year — ukupno ${d.total.toStringAsFixed(1)} kg',
+        style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+      ),
       pw.SizedBox(height: 12),
-      pw.Text('Po paši', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+      pw.Text(
+        'Po paši',
+        style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+      ),
       pw.SizedBox(height: 6),
       _pdfTable(
         headers: const ['Paša', 'kg'],
-        data: d.pastureTotals.entries.map((e) => [e.key, e.value.toStringAsFixed(1)]).toList()..sort((a, b) => a[0].compareTo(b[0])),
+        data:
+            d.pastureTotals.entries
+                .map((e) => [e.key, e.value.toStringAsFixed(1)])
+                .toList()
+              ..sort((a, b) => a[0].compareTo(b[0])),
       ),
       pw.SizedBox(height: 16),
-      pw.Text('Po pčelinjaku i paši', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+      pw.Text(
+        'Po pčelinjaku i paši',
+        style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+      ),
       pw.SizedBox(height: 6),
       _pdfTable(
         headers: const ['Pčelinjak', 'Paša', 'kg'],
         data: d.byApiary.map((e) {
           final parts = e.key.split('|');
-          return ['${parts[0]} · ${parts[1]}', parts[2], e.value.toStringAsFixed(1)];
+          return [
+            '${parts[0]} · ${parts[1]}',
+            parts[2],
+            e.value.toStringAsFixed(1),
+          ];
         }).toList(),
       ),
     ];
@@ -540,18 +743,28 @@ class ReportService {
       doc.paragraph('Nema prinosa za $year.');
       return;
     }
-    doc.paragraph('Godina $year — ukupno ${d.total.toStringAsFixed(1)} kg', bold: true);
+    doc.paragraph(
+      'Godina $year — ukupno ${d.total.toStringAsFixed(1)} kg',
+      bold: true,
+    );
     doc.paragraph('Po paši', bold: true);
     doc.table(
       const ['Paša', 'kg'],
-      d.pastureTotals.entries.map((e) => [e.key, e.value.toStringAsFixed(1)]).toList()..sort((a, b) => a[0].compareTo(b[0])),
+      d.pastureTotals.entries
+          .map((e) => [e.key, e.value.toStringAsFixed(1)])
+          .toList()
+        ..sort((a, b) => a[0].compareTo(b[0])),
     );
     doc.paragraph('Po pčelinjaku i paši', bold: true);
     doc.table(
       const ['Pčelinjak', 'Paša', 'kg'],
       d.byApiary.map((e) {
         final parts = e.key.split('|');
-        return ['${parts[0]} · ${parts[1]}', parts[2], e.value.toStringAsFixed(1)];
+        return [
+          '${parts[0]} · ${parts[1]}',
+          parts[2],
+          e.value.toStringAsFixed(1),
+        ];
       }).toList(),
     );
   }
@@ -560,12 +773,16 @@ class ReportService {
     final d = await _harvestData(year);
     final buf = StringBuffer();
     buf.writeln('sekcija;pasa;pcelinjak;kg');
-    for (final e in d.pastureTotals.entries.toList()..sort((a, b) => a.key.compareTo(b.key))) {
+    for (final e
+        in d.pastureTotals.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key))) {
       buf.writeln('po_pasi;${_csv(e.key)};;${e.value.toStringAsFixed(1)}');
     }
     for (final e in d.byApiary) {
       final parts = e.key.split('|');
-      buf.writeln('po_pcelinjaku;${_csv(parts[2])};${_csv('${parts[0]} · ${parts[1]}')};${e.value.toStringAsFixed(1)}');
+      buf.writeln(
+        'po_pcelinjaku;${_csv(parts[2])};${_csv('${parts[0]} · ${parts[1]}')};${e.value.toStringAsFixed(1)}',
+      );
     }
     buf.writeln('ukupno;;;${d.total.toStringAsFixed(1)}');
     return buf.toString();
@@ -574,7 +791,12 @@ class ReportService {
   Future<List<pw.Widget>> _queensPdf() async {
     final d = await _queensData();
     if (d.rows.isEmpty) {
-      return [pw.Text('Nema aktivnih košnica.', style: const pw.TextStyle(fontSize: 12))];
+      return [
+        pw.Text(
+          'Nema aktivnih košnica.',
+          style: const pw.TextStyle(fontSize: 12),
+        ),
+      ];
     }
     return [
       pw.Text(
@@ -582,7 +804,10 @@ class ReportService {
         style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
       ),
       pw.SizedBox(height: 12),
-      _pdfTable(headers: const ['Pč.', 'RB', 'Barkod', 'God.', 'Mark.', 'Poreklo'], data: d.rows),
+      _pdfTable(
+        headers: const ['Pč.', 'RB', 'Barkod', 'God.', 'Mark.', 'Poreklo'],
+        data: d.rows,
+      ),
     ];
   }
 
@@ -596,7 +821,14 @@ class ReportService {
       'Aktivne košnice: ${d.rows.length} · sa maticom: ${d.withQueen} · markirane: ${d.marked}',
       bold: true,
     );
-    doc.table(const ['Pč.', 'RB', 'Barkod', 'God.', 'Mark.', 'Poreklo'], d.rows);
+    doc.table(const [
+      'Pč.',
+      'RB',
+      'Barkod',
+      'God.',
+      'Mark.',
+      'Poreklo',
+    ], d.rows);
   }
 
   Future<String> _queensCsv() async {
@@ -609,10 +841,99 @@ class ReportService {
     return buf.toString();
   }
 
+  Future<List<pw.Widget>> _movedHistoryPdf() async {
+    final rows = await _movedHistoryData();
+    if (rows.isEmpty) {
+      return [pw.Text('Nema evidentiranih selidbi.')];
+    }
+    return [
+      _pdfTable(
+        headers: const [
+          'Pčelinjak',
+          'RB',
+          'Barkod',
+          'Paša',
+          'Lokacija',
+          'Od',
+          'Do',
+          'Status',
+        ],
+        data: rows
+            .map(
+              (r) => [
+                '${r.workNumber} · ${r.apiaryName}',
+                '${r.orderNumber}',
+                r.barcode,
+                r.pasture,
+                r.locationName,
+                DateFormat('dd.MM.yyyy.').format(r.activeFrom),
+                r.activeTo == null
+                    ? '—'
+                    : DateFormat('dd.MM.yyyy.').format(r.activeTo!),
+                r.statusLabel,
+              ],
+            )
+            .toList(),
+      ),
+    ];
+  }
+
+  Future<void> _movedHistoryDocx(DocxBuilder doc) async {
+    final rows = await _movedHistoryData();
+    if (rows.isEmpty) {
+      doc.paragraph('Nema evidentiranih selidbi.');
+      return;
+    }
+    doc.table(
+      const [
+        'Pčelinjak',
+        'RB',
+        'Barkod',
+        'Paša',
+        'Lokacija',
+        'Od',
+        'Do',
+        'Status',
+      ],
+      rows
+          .map(
+            (r) => [
+              '${r.workNumber} · ${r.apiaryName}',
+              '${r.orderNumber}',
+              r.barcode,
+              r.pasture,
+              r.locationName,
+              DateFormat('dd.MM.yyyy.').format(r.activeFrom),
+              r.activeTo == null
+                  ? '—'
+                  : DateFormat('dd.MM.yyyy.').format(r.activeTo!),
+              r.statusLabel,
+            ],
+          )
+          .toList(),
+    );
+  }
+
+  Future<String> _movedHistoryCsv() async {
+    final rows = await _movedHistoryData();
+    final buf = StringBuffer();
+    buf.writeln(
+      'pcelinjak_rb;pcelinjak;rb_kosnice;barkod;pasa;lokacija;activeFrom;activeTo;status',
+    );
+    for (final r in rows) {
+      buf.writeln(
+        '${r.workNumber};${_csv(r.apiaryName)};${r.orderNumber};${_csv(r.barcode)};${_csv(r.pasture)};${_csv(r.locationName)};${DateFormat('dd.MM.yyyy.').format(r.activeFrom)};${r.activeTo == null ? '' : DateFormat('dd.MM.yyyy.').format(r.activeTo!)};${_csv(r.statusLabel)}',
+      );
+    }
+    return buf.toString();
+  }
+
   Future<String> _prijavaCsv(PrijavaStanjaOptions opts) async {
     final pages = await _prijavaPages(opts);
     final buf = StringBuffer();
-    buf.writeln('hid;ime;datum;pcelinjak_rb;pcelinjak_naziv;id_pcelinjaka;barkod');
+    buf.writeln(
+      'hid;ime;datum;pcelinjak_rb;pcelinjak_naziv;id_pcelinjaka;barkod',
+    );
     final date = DateFormat('dd.MM.yyyy.').format(opts.asOf);
     for (final page in pages) {
       if (page.barcodes.isEmpty) {
@@ -647,13 +968,19 @@ class ReportService {
         color: PdfColors.grey300,
         border: pw.Border.all(color: PdfColors.grey600, width: 0.6),
       ),
-      child: pw.Text(title, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+      child: pw.Text(
+        title,
+        style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+      ),
     );
   }
 
   pw.Widget _digitBoxes(String value, {required int boxes}) {
     final cleaned = value.replaceAll(RegExp(r'\D'), '');
-    final digits = List.generate(boxes, (i) => i < cleaned.length ? cleaned[i] : '');
+    final digits = List.generate(
+      boxes,
+      (i) => i < cleaned.length ? cleaned[i] : '',
+    );
     return pw.Row(
       children: [
         for (final d in digits)
@@ -662,8 +989,16 @@ class ReportService {
               margin: const pw.EdgeInsets.only(right: 2),
               height: 20,
               alignment: pw.Alignment.center,
-              decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey700, width: 0.6)),
-              child: pw.Text(d, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey700, width: 0.6),
+              ),
+              child: pw.Text(
+                d,
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
             ),
           ),
       ],
@@ -689,7 +1024,10 @@ class ReportService {
             children: [
               for (final cell in row)
                 pw.Padding(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 5,
+                  ),
                   child: pw.Text(cell, style: const pw.TextStyle(fontSize: 10)),
                 ),
             ],
@@ -698,7 +1036,10 @@ class ReportService {
     );
   }
 
-  pw.Widget _pdfTable({required List<String> headers, required List<List<String>> data}) {
+  pw.Widget _pdfTable({
+    required List<String> headers,
+    required List<List<String>> data,
+  }) {
     return pw.TableHelper.fromTextArray(
       headers: headers,
       data: data,
@@ -742,11 +1083,46 @@ class _HarvestData {
 }
 
 class _QueensData {
-  _QueensData({required this.rows, required this.withQueen, required this.marked});
+  _QueensData({
+    required this.rows,
+    required this.withQueen,
+    required this.marked,
+  });
 
   final List<List<String>> rows;
   final int withQueen;
   final int marked;
+}
+
+class _MovedHistoryRow {
+  _MovedHistoryRow({
+    required this.workNumber,
+    required this.apiaryName,
+    required this.orderNumber,
+    required this.barcode,
+    required this.pasture,
+    required this.locationName,
+    required this.activeFrom,
+    required this.activeTo,
+    required this.status,
+  });
+
+  final int workNumber;
+  final String apiaryName;
+  final int orderNumber;
+  final String barcode;
+  final String pasture;
+  final String locationName;
+  final DateTime activeFrom;
+  final DateTime? activeTo;
+  final String status;
+
+  String get statusLabel => switch (status) {
+    'ACTIVE' => 'Aktivna',
+    'FINISHED' => 'Završena',
+    'REMOVED' => 'Uklonjena',
+    _ => status,
+  };
 }
 
 class _HarvestAgg {

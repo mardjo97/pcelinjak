@@ -43,6 +43,7 @@ public class ReminderResource {
                 Reminder e = SyncSupport.upsert(userId, item, Reminder::findByUuid, Reminder::new, (r, d) -> {
                     r.hiveUuid = d.hiveUuid;
                     r.groupHiveUuid = d.groupHiveUuid;
+                    r.inspectionUuid = d.inspectionUuid;
                     r.dueAt = d.dueAt;
                     r.title = d.title;
                     r.completed = d.completed;
@@ -59,6 +60,7 @@ public class ReminderResource {
         SyncSupport.copyMeta(r, d);
         d.hiveUuid = r.hiveUuid;
         d.groupHiveUuid = r.groupHiveUuid;
+        d.inspectionUuid = r.inspectionUuid;
         d.dueAt = r.dueAt;
         d.title = r.title;
         d.completed = r.completed;
