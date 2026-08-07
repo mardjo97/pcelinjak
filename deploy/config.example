@@ -38,6 +38,8 @@ DEPLOY_PATH=/opt/pcelinjak
 # PCELINJAK_JWT_EXPIRATION_SECONDS=31536000
 # JWT secret (min 32 chars, obavezno promeniti)
 # PCELINJAK_JWT_SECRET=replace-with-strong-random-secret
+# Ops-dashboard /admin/stats (X-Admin-Key); leave empty to leave endpoint open
+# PCELINJAK_ADMIN_KEY=
 
 # Optional: Gmail App lozinka ili Loopia mailbox lozinka
 # MAIL_FROM=noreply@hexatech.rs

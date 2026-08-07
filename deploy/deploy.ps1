@@ -312,6 +312,12 @@ if ($jwtExp) {
     $jwtExpEscaped = $jwtExp -replace "'", "'\\''"
     $exportJwt += "export PCELINJAK_JWT_EXPIRATION_SECONDS='$jwtExpEscaped'; "
 }
+$adminKey = $config["PCELINJAK_ADMIN_KEY"]
+$exportAdminKey = ""
+if ($adminKey) {
+    $adminKeyEscaped = $adminKey -replace "'", "'\\''"
+    $exportAdminKey = "export PCELINJAK_ADMIN_KEY='$adminKeyEscaped'; "
+}
 
 $notificationUrl = $config["NOTIFICATION_SERVICE_URL"]
 $notificationKey = $config["NOTIFICATION_API_KEY"]
@@ -689,12 +695,12 @@ if ($Build) {
     Write-Host "Building and starting containers (retrying on network errors)..." -ForegroundColor Yellow
     # Uklanjamo samo backend (ne mysql), da se ne izgubi baza.
     Invoke-Remote "cd '$pathEscapedForRemote' && $composeCmd rm -sf backend 2>/dev/null; true"
-    $retryCmd = "cd '$pathEscapedForRemote' && ${exportMail}${exportSentry}${exportSentryEnabled}${exportJwt}${exportNotification}${exportComposeEnv}for i in 1 2 3 4 5; do $composeCmd pull && $composeCmd up -d --build && exit 0; echo `"Attempt `$i failed, retry in 45s...`"; sleep 45; done; exit 1"
+    $retryCmd = "cd '$pathEscapedForRemote' && ${exportMail}${exportSentry}${exportSentryEnabled}${exportJwt}${exportAdminKey}${exportNotification}${exportComposeEnv}for i in 1 2 3 4 5; do $composeCmd pull && $composeCmd up -d --build && exit 0; echo `"Attempt `$i failed, retry in 45s...`"; sleep 45; done; exit 1"
     Invoke-Remote $retryCmd
 } else {
     Write-Host "Starting containers (no rebuild)..." -ForegroundColor Yellow
     Invoke-Remote "cd '$pathEscapedForRemote' && $composeCmd rm -sf backend 2>/dev/null; true"
-    $retryCmd = "cd '$pathEscapedForRemote' && ${exportMail}${exportSentry}${exportSentryEnabled}${exportJwt}${exportNotification}${exportComposeEnv}for i in 1 2 3 4 5; do $composeCmd pull 2>/dev/null; $composeCmd up -d && exit 0; echo `"Attempt `$i failed, retry in 45s...`"; sleep 45; done; exit 1"
+    $retryCmd = "cd '$pathEscapedForRemote' && ${exportMail}${exportSentry}${exportSentryEnabled}${exportJwt}${exportAdminKey}${exportNotification}${exportComposeEnv}for i in 1 2 3 4 5; do $composeCmd pull 2>/dev/null; $composeCmd up -d && exit 0; echo `"Attempt `$i failed, retry in 45s...`"; sleep 45; done; exit 1"
     Invoke-Remote $retryCmd
 }
 
