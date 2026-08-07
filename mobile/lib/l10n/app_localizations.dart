@@ -272,12 +272,6 @@ abstract class AppLocalizations {
   /// **'Lozinka'**
   String get password;
 
-  /// No description provided for @serverUrl.
-  ///
-  /// In sr, this message translates to:
-  /// **'Server URL'**
-  String get serverUrl;
-
   /// No description provided for @signIn.
   ///
   /// In sr, this message translates to:
@@ -374,11 +368,29 @@ abstract class AppLocalizations {
   /// **'Dodaj pčelinjak'**
   String get addApiary;
 
+  /// No description provided for @apiariesSection.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pčelinjaci'**
+  String get apiariesSection;
+
+  /// No description provided for @apiariesSectionHint.
+  ///
+  /// In sr, this message translates to:
+  /// **'Stalne lokacije i košnice'**
+  String get apiariesSectionHint;
+
   /// No description provided for @hiveGroups.
   ///
   /// In sr, this message translates to:
   /// **'Grupe košnica'**
   String get hiveGroups;
+
+  /// No description provided for @hiveGroupsHint.
+  ///
+  /// In sr, this message translates to:
+  /// **'Privremene radne liste'**
+  String get hiveGroupsHint;
 
   /// No description provided for @total.
   ///
@@ -433,12 +445,6 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'npr. 12 cifara'**
   String get hidHint;
-
-  /// No description provided for @serverAddress.
-  ///
-  /// In sr, this message translates to:
-  /// **'Adresa servera'**
-  String get serverAddress;
 
   /// No description provided for @settingsSaved.
   ///

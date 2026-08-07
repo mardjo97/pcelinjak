@@ -25,15 +25,8 @@ class _AuthScreenState extends State<AuthScreen> {
   final _password = TextEditingController();
   final _name = TextEditingController();
   final _phone = TextEditingController();
-  final _baseUrl = TextEditingController();
   bool _register = false;
   bool _loading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.api.baseUrl().then((u) => _baseUrl.text = u);
-  }
 
   @override
   void dispose() {
@@ -41,7 +34,6 @@ class _AuthScreenState extends State<AuthScreen> {
     _password.dispose();
     _name.dispose();
     _phone.dispose();
-    _baseUrl.dispose();
     super.dispose();
   }
 
@@ -49,7 +41,6 @@ class _AuthScreenState extends State<AuthScreen> {
     final l10n = AppLocalizations.of(context);
     setState(() => _loading = true);
     try {
-      await widget.api.setBaseUrl(_baseUrl.text.trim());
       final auth = AuthService(widget.api);
       if (_register) {
         await auth.register(
@@ -132,7 +123,6 @@ class _AuthScreenState extends State<AuthScreen> {
                     decoration: InputDecoration(labelText: l10n.password),
                     obscureText: true,
                   ),
-                  TextField(controller: _baseUrl, decoration: InputDecoration(labelText: l10n.serverUrl)),
                 ],
               ),
               const SizedBox(height: 20),

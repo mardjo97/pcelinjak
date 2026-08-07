@@ -93,9 +93,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get password => 'Password';
 
   @override
-  String get serverUrl => 'Server URL';
-
-  @override
   String get signIn => 'Sign in';
 
   @override
@@ -150,7 +147,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addApiary => 'Add apiary';
 
   @override
+  String get apiariesSection => 'Apiaries';
+
+  @override
+  String get apiariesSectionHint => 'Permanent locations and hives';
+
+  @override
   String get hiveGroups => 'Hive groups';
+
+  @override
+  String get hiveGroupsHint => 'Temporary work lists';
 
   @override
   String get total => 'TOTAL';
@@ -184,9 +190,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hidHint => 'e.g. 12 digits';
-
-  @override
-  String get serverAddress => 'Server address';
 
   @override
   String get settingsSaved => 'Settings saved';

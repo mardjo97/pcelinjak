@@ -13,7 +13,7 @@ param(
     [switch]$SetupLocalBackup, # one-time: setup local emergency backup + cron
     [switch]$BackupNow,   # run backup script immediately on server
     [ValidateSet("prod", "test")]
-    [string]$Environment = "test"
+    [string]$Environment = "prod"
 )
 
 $ErrorActionPreference = "Stop"
@@ -71,9 +71,9 @@ if (-not $composeProjectName) {
 }
 if (-not $deployBackendUrl) {
     if ($Environment -eq "test") {
-        $deployBackendUrl = "http://${host_name}:8082"
+        $deployBackendUrl = "http://${host_name}:8088"
     } else {
-        $deployBackendUrl = "http://${host_name}:8081"
+        $deployBackendUrl = "http://${host_name}:8082"
     }
 }
 
@@ -339,10 +339,12 @@ $mysqlPassword = $config["MYSQL_PASSWORD"]
 $backendLogDir = $config["BACKEND_LOG_DIR"]
 $mailBaseUrl = $config["PCELINJAK_MAIL_BASE_URL"]
 if (-not $backendPort) {
-    if ($Environment -eq "test") { $backendPort = "8082" } else { $backendPort = "8081" }
+    # Shared host: 8081 = farma; prod default 8082
+    if ($Environment -eq "test") { $backendPort = "8088" } else { $backendPort = "8082" }
 }
 if (-not $mysqlPort) {
-    if ($Environment -eq "test") { $mysqlPort = "3307" } else { $mysqlPort = "3306" }
+    # Shared host: 3306 = farma; prod default 3310
+    if ($Environment -eq "test") { $mysqlPort = "3311" } else { $mysqlPort = "3310" }
 }
 if (-not $backendLogDir) {
     if ($Environment -eq "test") { $backendLogDir = "backend-test" } else { $backendLogDir = "backend" }

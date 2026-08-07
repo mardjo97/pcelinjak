@@ -25,7 +25,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _nameCtrl = TextEditingController();
   final _hidCtrl = TextEditingController();
-  final _urlCtrl = TextEditingController();
   bool _loading = true;
   bool _saving = false;
 
@@ -39,7 +38,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _hidCtrl.dispose();
-    _urlCtrl.dispose();
     super.dispose();
   }
 
@@ -47,12 +45,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final session = await widget.api.session();
     final name = await BeekeeperPrefs.reportName(fallback: session['name']);
     final hid = await BeekeeperPrefs.hid();
-    final url = await widget.api.baseUrl();
     if (!mounted) return;
     setState(() {
       _nameCtrl.text = name;
       _hidCtrl.text = hid;
-      _urlCtrl.text = url;
       _loading = false;
     });
   }
@@ -62,8 +58,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await BeekeeperPrefs.setReportName(_nameCtrl.text);
       await BeekeeperPrefs.setHid(_hidCtrl.text);
-      final url = _urlCtrl.text.trim();
-      if (url.isNotEmpty) await widget.api.setBaseUrl(url);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context).settingsSaved)),
@@ -154,14 +148,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       decoration: InputDecoration(
                         labelText: l10n.hidLabel,
                         hintText: l10n.hidHint,
-                      ),
-                    ),
-                    TextField(
-                      controller: _urlCtrl,
-                      keyboardType: TextInputType.url,
-                      decoration: InputDecoration(
-                        labelText: l10n.serverAddress,
-                        hintText: 'http://…',
                       ),
                     ),
                   ],

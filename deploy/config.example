@@ -21,17 +21,19 @@ DEPLOY_PATH=/opt/pcelinjak
 # Ime Docker volume-a za MySQL
 # PCELINJAK_MYSQL_VOLUME_NAME=pcelinjak_mysql_data
 # Optional: URL koji deploy ispisuje na kraju
-# DEPLOY_BACKEND_URL=http://your-server-ip:8081
+# DEPLOY_BACKEND_URL=http://your-server-ip:8082
 # Optional: portovi i log dir za compose varijable
-# BACKEND_PORT=8081
-# MYSQL_PORT=3306
+# Na shared hostu (sa Farmom): NE koristi 8081/3306 — farma ih drži.
+# Predlog prod: BACKEND_PORT=8082, MYSQL_PORT=3310
+# BACKEND_PORT=8082
+# MYSQL_PORT=3310
 # MySQL credentials (OBAVEZNO promeniti u produkciji)
 # MYSQL_ROOT_PASSWORD=strong-root-password
 # MYSQL_DATABASE=pcelinjak
 # MYSQL_USER=pcelinjak
 # MYSQL_PASSWORD=strong-app-password
 # BACKEND_LOG_DIR=backend
-# PCELINJAK_MAIL_BASE_URL=http://your-server-ip:8081
+# PCELINJAK_MAIL_BASE_URL=http://your-server-ip:8082
 # Trajanje JWT u sekundama (podrazumevano 365 dana)
 # PCELINJAK_JWT_EXPIRATION_SECONDS=31536000
 # JWT secret (min 32 chars, obavezno promeniti)
@@ -45,7 +47,8 @@ DEPLOY_PATH=/opt/pcelinjak
 # MAIL_PASSWORD=replace-with-mailbox-password
 
 # Optional: notification-service (FCM podsetnici)
-# NOTIFICATION_SERVICE_URL=http://host.docker.internal:8085
+# Na beeback hostu: notification-service slusa 8087 (8085 = cvmaker-frontend)
+# NOTIFICATION_SERVICE_URL=http://host.docker.internal:8087
 # NOTIFICATION_API_KEY=
 # NOTIFICATION_ENABLED=true
 

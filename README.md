@@ -28,7 +28,7 @@ docker compose up --build -d
 Isti obrazac kao Farma — vidi [deploy/README.md](deploy/README.md):
 
 ```powershell
-copy deploy\config.example deploy\config.local
+copy deploy\config.example deploy\config
 # popuni DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH, tajne…
 .\deploy\deploy.ps1 -Setup
 .\deploy\deploy.ps1 -Build
@@ -75,7 +75,7 @@ flutter pub get
 flutter run
 ```
 
-Na Android emulatoru default server je `http://10.0.2.2:8081` (host localhost). URL se može promeniti na login ekranu.
+Na produkciji app uvek koristi `https://pcelinjak.hexatech.rs` (nema polja za Server URL).
 
 Tok:
 

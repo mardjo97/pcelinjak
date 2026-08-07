@@ -19,17 +19,9 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  static const defaultBaseUrl = 'http://192.168.8.175:8081';
+  static const baseUrlValue = 'https://pcelinjak.hexatech.rs';
 
-  Future<String> baseUrl() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('api_base_url') ?? defaultBaseUrl;
-  }
-
-  Future<void> setBaseUrl(String url) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('api_base_url', url.replaceAll(RegExp(r'/$'), ''));
-  }
+  Future<String> baseUrl() async => baseUrlValue;
 
   Future<String?> token() async {
     final prefs = await SharedPreferences.getInstance();

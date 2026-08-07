@@ -94,9 +94,6 @@ class AppLocalizationsSr extends AppLocalizations {
   String get password => 'Lozinka';
 
   @override
-  String get serverUrl => 'Server URL';
-
-  @override
   String get signIn => 'Prijavi se';
 
   @override
@@ -151,7 +148,16 @@ class AppLocalizationsSr extends AppLocalizations {
   String get addApiary => 'Dodaj pčelinjak';
 
   @override
+  String get apiariesSection => 'Pčelinjaci';
+
+  @override
+  String get apiariesSectionHint => 'Stalne lokacije i košnice';
+
+  @override
   String get hiveGroups => 'Grupe košnica';
+
+  @override
+  String get hiveGroupsHint => 'Privremene radne liste';
 
   @override
   String get total => 'UKUPNO';
@@ -185,9 +191,6 @@ class AppLocalizationsSr extends AppLocalizations {
 
   @override
   String get hidHint => 'npr. 12 cifara';
-
-  @override
-  String get serverAddress => 'Adresa servera';
 
   @override
   String get settingsSaved => 'Konfiguracija sačuvana';
