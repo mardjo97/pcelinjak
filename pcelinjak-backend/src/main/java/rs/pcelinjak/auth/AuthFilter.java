@@ -21,7 +21,8 @@ public class AuthFilter implements ContainerRequestFilter {
             "/auth/register", "auth/register",
             "/auth/login", "auth/login",
             "/auth/activate", "auth/activate",
-            "/api/ping", "api/ping");
+            "/api/ping", "api/ping",
+            "/admin/stats", "admin/stats");
 
     @Inject
     JwtService jwtService;
