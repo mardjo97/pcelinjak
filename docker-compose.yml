@@ -12,10 +12,13 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      # MySQL 8 often needs >50s after restart (InnoDB/XA recovery). Without
+      # start_period, compose marks it unhealthy and deploy retries thrash it.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 30
+      start_period: 120s
 
   db-init:
     image: mysql:8
