@@ -22,7 +22,7 @@ public class AuthFilter implements ContainerRequestFilter {
             "/auth/login", "auth/login",
             "/auth/activate", "auth/activate",
             "/api/ping", "api/ping",
-            "/admin/stats", "admin/stats");
+            "/admin/", "admin/");
 
     @Inject
     JwtService jwtService;

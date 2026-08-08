@@ -78,25 +78,32 @@ if (-not $deployBackendUrl) {
 }
 
 $sshTarget = "${user}@${host_name}"
-$sshOpts = @()
-if ($sshKey) { $sshOpts = @("-i", $sshKey) }
+# Keepalive: Maven/Docker build on server can take several minutes; without this SSH often resets.
+$sshOpts = @(
+    "-o", "ServerAliveInterval=30",
+    "-o", "ServerAliveCountMax=40",
+    "-o", "TCPKeepAlive=yes",
+    "-o", "ConnectTimeout=30"
+)
+if ($sshKey) { $sshOpts += @("-i", $sshKey) }
 
 function Invoke-Remote {
     param([string]$Command)
     $argList = $sshOpts + @("$sshTarget", $Command)
     & ssh $argList
-    if ($LASTEXITCODE -ne 0) { throw "ssh failed: $Command" }
+    if ($LASTEXITCODE -ne 0) {
+        # Do not echo $Command — it often contains MAIL_PASSWORD / JWT / API keys.
+        throw "ssh failed (exit $LASTEXITCODE). Re-run deploy; if it keeps dropping mid-build, check server load / SSH stability."
+    }
 }
 
 function Invoke-RemoteScript {
     param([string]$Script)
     # LF u stringu; tr \015 skida CR koji PowerShell/ssh cesto doda pri pipe-u
     $Script = $Script -replace "`r`n", "`n" -replace "`r", ""
-    $sshArgs = @()
-    if ($sshKey) { $sshArgs += @("-i", $sshKey) }
-    $sshArgs += @("$sshTarget", 'tr -d ''\015'' | bash -s')
+    $sshArgs = $sshOpts + @("$sshTarget", 'tr -d ''\015'' | bash -s')
     $Script | & ssh $sshArgs
-    if ($LASTEXITCODE -ne 0) { throw "Remote script failed." }
+    if ($LASTEXITCODE -ne 0) { throw "Remote script failed (exit $LASTEXITCODE)." }
 }
 
 function Escape-BashSingleQuotedValue {

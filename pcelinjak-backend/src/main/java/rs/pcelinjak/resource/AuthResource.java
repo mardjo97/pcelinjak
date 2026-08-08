@@ -13,6 +13,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
 import rs.pcelinjak.auth.JwtService;
 import rs.pcelinjak.dto.AuthDto;
 import rs.pcelinjak.entity.Apiary;
@@ -32,6 +33,8 @@ import rs.pcelinjak.util.TokenUtil;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthResource {
+
+    private static final Logger LOG = Logger.getLogger(AuthResource.class);
 
     @Inject
     JwtService jwtService;
@@ -60,7 +63,17 @@ public class AuthResource {
         user.activationKey = TokenUtil.generateActivationKey();
         user.persist();
 
-        mailService.sendActivationEmail(user);
+        try {
+            mailService.sendActivationEmail(user);
+        } catch (Exception e) {
+            LOG.errorf(e, "Activation email failed for %s", email);
+            // Keep the user row; otherwise clients only see a cryptic 500 and nothing is saved.
+            return Response.status(502)
+                    .entity(new AuthDto.MessageResponse(
+                            "Nalog je kreiran, ali aktivacioni email nije poslat (SMTP greška). "
+                                    + "Proverite spam kasnije ili kontaktirajte podršku za ručnu aktivaciju."))
+                    .build();
+        }
 
         return Response.status(Response.Status.CREATED)
                 .entity(new AuthDto.MessageResponse("Proverite email za aktivaciju naloga."))
