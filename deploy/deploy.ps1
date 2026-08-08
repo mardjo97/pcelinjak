@@ -699,16 +699,58 @@ if ($BackupNow) {
     exit 0
 }
 if ($Build) {
-    Write-Host "Building and starting containers (retrying on network errors)..." -ForegroundColor Yellow
-    # Uklanjamo samo backend (ne mysql), da se ne izgubi baza.
-    Invoke-Remote "cd '$pathEscapedForRemote' && $composeCmd rm -sf backend 2>/dev/null; true"
-    $retryCmd = "cd '$pathEscapedForRemote' && ${exportMail}${exportSentry}${exportSentryEnabled}${exportJwt}${exportAdminKey}${exportNotification}${exportComposeEnv}for i in 1 2 3 4 5; do $composeCmd pull && $composeCmd up -d --build && exit 0; echo `"Attempt `$i failed, retry in 45s...`"; sleep 45; done; exit 1"
-    Invoke-Remote $retryCmd
+    Write-Host "Building and starting containers (MySQL left running; backend rebuilt)..." -ForegroundColor Yellow
+    # Do NOT thrash MySQL on retries: InnoDB recovery is slow and compose up recreates it.
+    # 1) ensure mysql once, wait healthy  2) retry only backend --build --no-deps
+    $mysqlContainer = "$composeProjectName-mysql-1"
+    $buildScript = @"
+set -e
+cd '$pathEscapedForRemote'
+${exportMail}${exportSentry}${exportSentryEnabled}${exportJwt}${exportAdminKey}${exportNotification}${exportComposeEnv}
+$composeCmd rm -sf backend 2>/dev/null || true
+$composeCmd up -d mysql
+echo 'Waiting for MySQL healthy...'
+for j in `$(seq 1 72); do
+  st=`$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' '$mysqlContainer' 2>/dev/null || echo missing)
+  echo "mysql status: `$st (`$j/72)"
+  if [ "`$st" = healthy ]; then break; fi
+  if [ "`$j" -eq 72 ]; then echo 'MySQL did not become healthy'; docker logs '$mysqlContainer' --tail 40; exit 1; fi
+  sleep 5
+done
+$composeCmd run --rm --no-deps db-init || true
+for i in 1 2 3 4 5; do
+  if $composeCmd up -d --build --no-deps backend; then
+    echo 'Backend up.'
+    exit 0
+  fi
+  echo "Attempt `$i failed, retry in 45s..."
+  sleep 45
+done
+exit 1
+"@
+    Invoke-RemoteScript $buildScript
 } else {
-    Write-Host "Starting containers (no rebuild)..." -ForegroundColor Yellow
-    Invoke-Remote "cd '$pathEscapedForRemote' && $composeCmd rm -sf backend 2>/dev/null; true"
-    $retryCmd = "cd '$pathEscapedForRemote' && ${exportMail}${exportSentry}${exportSentryEnabled}${exportJwt}${exportAdminKey}${exportNotification}${exportComposeEnv}for i in 1 2 3 4 5; do $composeCmd pull 2>/dev/null; $composeCmd up -d && exit 0; echo `"Attempt `$i failed, retry in 45s...`"; sleep 45; done; exit 1"
-    Invoke-Remote $retryCmd
+    Write-Host "Starting containers (no rebuild; MySQL not recreated)..." -ForegroundColor Yellow
+    $mysqlContainer = "$composeProjectName-mysql-1"
+    $upScript = @"
+set -e
+cd '$pathEscapedForRemote'
+${exportMail}${exportSentry}${exportSentryEnabled}${exportJwt}${exportAdminKey}${exportNotification}${exportComposeEnv}
+$composeCmd up -d mysql
+echo 'Waiting for MySQL healthy...'
+for j in `$(seq 1 72); do
+  st=`$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' '$mysqlContainer' 2>/dev/null || echo missing)
+  echo "mysql status: `$st (`$j/72)"
+  if [ "`$st" = healthy ]; then break; fi
+  if [ "`$j" -eq 72 ]; then echo 'MySQL did not become healthy'; exit 1; fi
+  sleep 5
+done
+$composeCmd run --rm --no-deps db-init || true
+$composeCmd up -d --no-deps backend
+"@
+    Invoke-RemoteScript $upScript
 }
+
+
 
 Write-Host "Deploy done. Backend: $deployBackendUrl" -ForegroundColor Green
