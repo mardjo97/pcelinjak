@@ -702,6 +702,8 @@ if ($Build) {
     Write-Host "Building and starting containers (MySQL left running; backend rebuilt)..." -ForegroundColor Yellow
     # Do NOT thrash MySQL on retries: InnoDB recovery is slow and compose up recreates it.
     # 1) ensure mysql once, wait healthy  2) retry only backend --build --no-deps
+    # IMPORTANT: any `compose run` in a script piped to `bash -s` MUST use -T and </dev/null
+    # or it steals the rest of the script from stdin (backend build never runs).
     $mysqlContainer = "$composeProjectName-mysql-1"
     $buildScript = @"
 set -e
@@ -717,7 +719,9 @@ for j in `$(seq 1 72); do
   if [ "`$j" -eq 72 ]; then echo 'MySQL did not become healthy'; docker logs '$mysqlContainer' --tail 40; exit 1; fi
   sleep 5
 done
-$composeCmd run --rm --no-deps db-init || true
+echo 'Running db-init...'
+$composeCmd run --rm --no-deps -T db-init </dev/null || true
+echo 'Building backend...'
 for i in 1 2 3 4 5; do
   if $composeCmd up -d --build --no-deps backend; then
     echo 'Backend up.'
@@ -745,8 +749,11 @@ for j in `$(seq 1 72); do
   if [ "`$j" -eq 72 ]; then echo 'MySQL did not become healthy'; exit 1; fi
   sleep 5
 done
-$composeCmd run --rm --no-deps db-init || true
+echo 'Running db-init...'
+$composeCmd run --rm --no-deps -T db-init </dev/null || true
+echo 'Starting backend...'
 $composeCmd up -d --no-deps backend
+echo 'Backend up.'
 "@
     Invoke-RemoteScript $upScript
 }
