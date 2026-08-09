@@ -43,7 +43,8 @@ public class InspectionResource {
                     i.queenStatus = d.queenStatus == null || d.queenStatus.isBlank() ? "NOT_CHECKED" : d.queenStatus;
                     i.broodStatus = d.broodStatus == null || d.broodStatus.isBlank() ? "NOT_CHECKED" : d.broodStatus;
                     i.foodStatus = d.foodStatus == null || d.foodStatus.isBlank() ? "NOT_CHECKED" : d.foodStatus;
-                    i.temperStatus = d.temperStatus == null || d.temperStatus.isBlank() ? "NOT_CHECKED" : d.temperStatus;
+                    i.temperStatus = normalizeTemper(d.temperStatus);
+                    i.healthStatus = d.healthStatus == null || d.healthStatus.isBlank() ? "NOT_CHECKED" : d.healthStatus;
                     i.strengthStatus = d.strengthStatus == null || d.strengthStatus.isBlank() ? "NOT_CHECKED" : d.strengthStatus;
                     i.followUpAt = d.followUpAt;
                     i.sourceType = d.sourceType;
@@ -67,11 +68,24 @@ public class InspectionResource {
         d.broodStatus = i.broodStatus;
         d.foodStatus = i.foodStatus;
         d.temperStatus = i.temperStatus;
+        d.healthStatus = i.healthStatus;
         d.strengthStatus = i.strengthStatus;
         d.followUpAt = i.followUpAt;
         d.sourceType = i.sourceType;
         d.sourceGroupHiveUuid = i.sourceGroupHiveUuid;
         d.sourceReminderUuid = i.sourceReminderUuid;
         return d;
+    }
+
+    private static String normalizeTemper(String temperStatus) {
+        if (temperStatus == null || temperStatus.isBlank()) {
+            return "NOT_CHECKED";
+        }
+        return switch (temperStatus) {
+            case "GOOD" -> "CALM";
+            case "ATTENTION" -> "NERVOUS";
+            case "CRITICAL" -> "AGGRESSIVE";
+            default -> temperStatus;
+        };
     }
 }

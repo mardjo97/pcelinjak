@@ -12,6 +12,7 @@ import '../widgets/home_fab.dart';
 import 'hive_harvests_screen.dart';
 import 'hive_inspections_screen.dart';
 import 'hive_notes_screen.dart';
+import 'hive_queens_screen.dart';
 
 class HiveScreen extends StatefulWidget {
   const HiveScreen({super.key, required this.hiveUuid, this.contextHiveUuids});
@@ -239,9 +240,9 @@ class _HiveScreenState extends State<HiveScreen> {
       return;
     }
     final q0 = existing ?? _queen;
-    final yearCtrl = TextEditingController(
-      text: '${q0?.queenYear ?? DateTime.now().year}',
-    );
+    final yearChoices = queenYearChoices(includeYear: q0?.queenYear);
+    var year = q0?.queenYear ?? DateTime.now().year;
+    if (!yearChoices.contains(year)) year = yearChoices.first;
     final originCtrl = TextEditingController(text: q0?.origin ?? '');
     var marked = q0?.marked ?? false;
     final ok = await showDialog<bool>(
@@ -252,10 +253,15 @@ class _HiveScreenState extends State<HiveScreen> {
           content: SingleChildScrollView(
             child: FormSpacedColumn(
               children: [
-                TextField(
-                  controller: yearCtrl,
+                DropdownButtonFormField<int>(
+                  initialValue: year,
+                  items: yearChoices
+                      .map(
+                        (y) => DropdownMenuItem(value: y, child: Text('$y')),
+                      )
+                      .toList(),
+                  onChanged: (v) => setLocal(() => year = v ?? year),
                   decoration: const InputDecoration(labelText: 'Godina'),
-                  keyboardType: TextInputType.number,
                 ),
                 TextField(
                   controller: originCtrl,
@@ -284,7 +290,6 @@ class _HiveScreenState extends State<HiveScreen> {
       ),
     );
     if (ok != true) return;
-    final year = int.tryParse(yearCtrl.text.trim());
     final q =
         q0 ??
         Queen(
@@ -387,7 +392,8 @@ class _HiveScreenState extends State<HiveScreen> {
       ).showSnackBar(SnackBar(content: Text(blocked)));
       return;
     }
-    final yearCtrl = TextEditingController(text: '${DateTime.now().year}');
+    final yearChoices = queenYearChoices();
+    var year = yearChoices.first;
     final originCtrl = TextEditingController();
     var marked = false;
     final ok = await showDialog<bool>(
@@ -398,10 +404,15 @@ class _HiveScreenState extends State<HiveScreen> {
           content: SingleChildScrollView(
             child: FormSpacedColumn(
               children: [
-                TextField(
-                  controller: yearCtrl,
+                DropdownButtonFormField<int>(
+                  initialValue: year,
+                  items: yearChoices
+                      .map(
+                        (y) => DropdownMenuItem(value: y, child: Text('$y')),
+                      )
+                      .toList(),
+                  onChanged: (v) => setLocal(() => year = v ?? year),
                   decoration: const InputDecoration(labelText: 'Godina'),
-                  keyboardType: TextInputType.number,
                 ),
                 TextField(
                   controller: originCtrl,
@@ -433,7 +444,7 @@ class _HiveScreenState extends State<HiveScreen> {
     final q = Queen(
       uuid: db.newUuid(),
       hiveUuid: widget.hiveUuid,
-      queenYear: int.tryParse(yearCtrl.text.trim()),
+      queenYear: year,
       marked: marked,
       origin: originCtrl.text.trim().isEmpty ? null : originCtrl.text.trim(),
       activeFrom: DateTime.now(),
@@ -506,6 +517,20 @@ class _HiveScreenState extends State<HiveScreen> {
       MaterialPageRoute(
         builder: (_) => HiveHarvestsScreen(
           hiveUuid: widget.hiveUuid,
+          hiveLabel: hive?.barcode,
+        ),
+      ),
+    );
+    _reload();
+  }
+
+  Future<void> _openQueensPage() async {
+    final hive = _hive;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HiveQueensScreen(
+          hiveUuid: _currentHiveUuid,
           hiveLabel: hive?.barcode,
         ),
       ),
@@ -718,163 +743,49 @@ class _HiveScreenState extends State<HiveScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          _HiveBlock(
-            color: const Color(0xFFEAF4FF),
-            accent: const Color(0xFF2B6CB0),
-            icon: Icons.place_outlined,
-            title: 'Lokacija',
-            actionLabel: 'Osveži',
-            onAction: _reload,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Bazni pčelinjak',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.muted(context),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _apiary == null
-                      ? 'Nepoznat pčelinjak'
-                      : 'Pčelinjak ${_apiary!.workNumber} · ${_apiary!.name}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                if ((_apiary?.location ?? '').trim().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(_apiary!.location!.trim()),
-                  ),
-                if (movedMembership != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'Trenutno seljena',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.muted(context),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
+          if (movedMembership != null) ...[
+            _HiveBlock(
+              color: const Color(0xFFEAF4FF),
+              accent: const Color(0xFF2B6CB0),
+              icon: Icons.place_outlined,
+              title: 'Selidba',
+              actionLabel: '',
+              onAction: null,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   if ((movedMembership.locationName ?? '').trim().isNotEmpty)
                     Text(
                       movedMembership.locationName!.trim(),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    )
+                  else
+                    const Text(
+                      'Lokacija nije uneta',
+                      style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                   if ((movedMembership.pastureType ?? '').trim().isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.only(top: 6),
                       child: Text(
                         'Paša: ${movedMembership.pastureType!.trim()}',
                       ),
                     ),
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.only(top: 6),
                     child: Text(
                       movedMembership.periodLabel,
                       style: TextStyle(color: AppTheme.muted(context)),
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-
-          // NAPOMENA
-          _HiveBlock(
-            color: const Color(0xFFEDF7F0),
-            accent: AppColors.meadow,
-            icon: Icons.sticky_note_2_outlined,
-            title: 'Napomena',
-            actionLabel: 'Dodaj napomenu',
-            onAction: () => _editNote(),
-            child: _notes.isEmpty
-                ? const Text('Još nema napomena za ovu košnicu.')
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Poslednja napomena',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.muted(context),
-                        ),
-                      ),
-                      _latestNoteTile(_notes.first),
-                      if (_notes.length > 1)
-                        TextButton.icon(
-                          onPressed: _openNotesPage,
-                          icon: const Icon(Icons.list_alt),
-                          label: Text('Sve napomene (${_notes.length})'),
-                        ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 14),
-
-          _HiveBlock(
-            color: const Color(0xFFF2EEFB),
-            accent: const Color(0xFF6B46C1),
-            icon: Icons.fact_check_outlined,
-            title: 'Kontrola košnice',
-            actionLabel: 'Dodaj kontrolu',
-            onAction: () => _editInspection(),
-            child: _latestInspection == null
-                ? const Text('Još nema unetih kontrola za ovu košnicu.')
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Poslednja kontrola',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.muted(context),
-                        ),
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(
-                          Icons.fact_check_outlined,
-                          color: Color(0xFF6B46C1),
-                        ),
-                        title: Text(
-                          inspectionSummaryLine(_latestInspection!),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          [
-                            _latestInspection!.inspectedAt
-                                .toLocal()
-                                .toString()
-                                .split('.')
-                                .first,
-                            inspectionValueLabel(
-                              inspectionOutcomeStatuses,
-                              _latestInspection!.outcomeStatus,
-                            ),
-                            'Izvor: ${inspectionSourceLabel(_latestInspection!)}',
-                          ].join(' · '),
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: _openInspectionsPage,
-                      ),
-                      if (_inspections.length > 1)
-                        TextButton.icon(
-                          onPressed: _openInspectionsPage,
-                          icon: const Icon(Icons.list_alt),
-                          label: Text('Sve kontrole (${_inspections.length})'),
-                        ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 14),
+          ],
 
           // MATICA
           _HiveBlock(
@@ -959,53 +870,106 @@ class _HiveScreenState extends State<HiveScreen> {
                     ],
                   ),
                 ],
-                if (_queenHistory.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Theme(
-                    data: Theme.of(
-                      context,
-                    ).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: EdgeInsets.zero,
-                      childrenPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Istorija matica (${_queenHistory.length})',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      children: [
-                        for (final q in _queenHistory)
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: (q.marked && q.queenYear != null)
-                                    ? queenMarkColor(q.queenYear!)
-                                    : Colors.black54,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.black26),
-                              ),
-                            ),
-                            title: Text(
-                              'Godina ${q.queenYear ?? '—'} · ${q.marked ? 'obeležena' : 'neobeležena'}',
-                            ),
-                            subtitle: Text(
-                              [
-                                q.periodLabel,
-                                if (q.endReason != null)
-                                  queenEndReasons[q.endReason!] ?? q.endReason!,
-                                if (q.origin != null && q.origin!.isNotEmpty)
-                                  q.origin!,
-                              ].join(' · '),
-                            ),
-                          ),
-                      ],
-                    ),
+                if (_queenHistory.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: _openQueensPage,
+                    icon: const Icon(Icons.list_alt),
+                    label: Text('Istorija matica (${_queenHistory.length})'),
                   ),
-                ],
               ],
             ),
+          ),
+          const SizedBox(height: 14),
+
+          _HiveBlock(
+            color: const Color(0xFFF2EEFB),
+            accent: const Color(0xFF6B46C1),
+            icon: Icons.fact_check_outlined,
+            title: 'Kontrola košnice',
+            actionLabel: 'Dodaj kontrolu',
+            onAction: () => _editInspection(),
+            child: _latestInspection == null
+                ? const Text('Još nema unetih kontrola za ovu košnicu.')
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Poslednja kontrola',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.muted(context),
+                        ),
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(
+                          Icons.fact_check_outlined,
+                          color: Color(0xFF6B46C1),
+                        ),
+                        title: Text(
+                          inspectionSummaryLine(_latestInspection!),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          [
+                            _latestInspection!.inspectedAt
+                                .toLocal()
+                                .toString()
+                                .split('.')
+                                .first,
+                            inspectionValueLabel(
+                              inspectionOutcomeStatuses,
+                              _latestInspection!.outcomeStatus,
+                            ),
+                            'Izvor: ${inspectionSourceLabel(_latestInspection!)}',
+                          ].join(' · '),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _openInspectionsPage,
+                      ),
+                      if (_inspections.length > 1)
+                        TextButton.icon(
+                          onPressed: _openInspectionsPage,
+                          icon: const Icon(Icons.list_alt),
+                          label: Text('Sve kontrole (${_inspections.length})'),
+                        ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 14),
+
+          // NAPOMENA
+          _HiveBlock(
+            color: const Color(0xFFEDF7F0),
+            accent: AppColors.meadow,
+            icon: Icons.sticky_note_2_outlined,
+            title: 'Napomena',
+            actionLabel: 'Dodaj napomenu',
+            onAction: () => _editNote(),
+            child: _notes.isEmpty
+                ? const Text('Još nema napomena za ovu košnicu.')
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Poslednja napomena',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.muted(context),
+                        ),
+                      ),
+                      _latestNoteTile(_notes.first),
+                      if (_notes.length > 1)
+                        TextButton.icon(
+                          onPressed: _openNotesPage,
+                          icon: const Icon(Icons.list_alt),
+                          label: Text('Sve napomene (${_notes.length})'),
+                        ),
+                    ],
+                  ),
           ),
           const SizedBox(height: 14),
 
@@ -1107,23 +1071,25 @@ class _HiveBlock extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             child,
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: accent,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(52),
-              ),
-              onPressed: onAction,
-              icon: const Icon(Icons.add),
-              label: Text(
-                actionLabel,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+            if (actionLabel.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                onPressed: onAction,
+                icon: const Icon(Icons.add),
+                label: Text(
+                  actionLabel,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

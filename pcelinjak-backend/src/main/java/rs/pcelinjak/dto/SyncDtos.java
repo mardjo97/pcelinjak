@@ -69,6 +69,7 @@ public class SyncDtos {
         public String broodStatus;
         public String foodStatus;
         public String temperStatus;
+        public String healthStatus;
         public String strengthStatus;
         public Instant followUpAt;
         public String sourceType;

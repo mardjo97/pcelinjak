@@ -381,7 +381,8 @@ Future<bool> editInspectionDialog(
   String queenStatus = existing?.queenStatus ?? 'NOT_CHECKED';
   String broodStatus = existing?.broodStatus ?? 'NOT_CHECKED';
   String foodStatus = existing?.foodStatus ?? 'NOT_CHECKED';
-  String temperStatus = existing?.temperStatus ?? 'NOT_CHECKED';
+  String temperStatus = normalizeInspectionTemperStatus(existing?.temperStatus);
+  String healthStatus = existing?.healthStatus ?? 'NOT_CHECKED';
   String strengthStatus = existing?.strengthStatus ?? 'NOT_CHECKED';
 
   Future<DateTime?> pickDateTime(BuildContext ctx, DateTime initial) async {
@@ -471,6 +472,12 @@ Future<bool> editInspectionDialog(
                   onChanged: (v) => setLocal(() => broodStatus = v),
                 ),
                 dropdown(
+                  label: 'Jačina društva',
+                  value: strengthStatus,
+                  options: inspectionStrengthStatuses,
+                  onChanged: (v) => setLocal(() => strengthStatus = v),
+                ),
+                dropdown(
                   label: 'Hrana',
                   value: foodStatus,
                   options: inspectionChecklistStatuses,
@@ -479,14 +486,14 @@ Future<bool> editInspectionDialog(
                 dropdown(
                   label: 'Temperament',
                   value: temperStatus,
-                  options: inspectionChecklistStatuses,
+                  options: inspectionTemperStatuses,
                   onChanged: (v) => setLocal(() => temperStatus = v),
                 ),
                 dropdown(
-                  label: 'Jačina društva',
-                  value: strengthStatus,
-                  options: inspectionStrengthStatuses,
-                  onChanged: (v) => setLocal(() => strengthStatus = v),
+                  label: 'Zdravlje',
+                  value: healthStatus,
+                  options: inspectionHealthStatuses,
+                  onChanged: (v) => setLocal(() => healthStatus = v),
                 ),
                 TextField(
                   controller: summaryCtrl,
@@ -570,6 +577,7 @@ Future<bool> editInspectionDialog(
   inspection.broodStatus = broodStatus;
   inspection.foodStatus = foodStatus;
   inspection.temperStatus = temperStatus;
+  inspection.healthStatus = healthStatus;
   inspection.strengthStatus = strengthStatus;
   inspection.followUpAt = followUpAt;
   inspection.sourceType = existing?.sourceType ?? sourceType;

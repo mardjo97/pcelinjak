@@ -589,6 +589,7 @@ class _GroupScreenState extends State<GroupScreen> {
       text: widget.groupType == 'MOVED' ? '1' : '',
     );
     DateTime? checkDate;
+    var reminderDayBefore = true;
 
     final ok = await showDialog<bool>(
       context: context,
@@ -628,7 +629,7 @@ class _GroupScreenState extends State<GroupScreen> {
                 maxLines: 2,
               ),
             if (widget.groupType == 'CONTROL' ||
-                widget.groupType == 'QUEEN_CHANGE')
+                widget.groupType == 'QUEEN_CHANGE') ...[
               Align(
                 alignment: Alignment.centerLeft,
                 child: OutlinedButton.icon(
@@ -651,6 +652,20 @@ class _GroupScreenState extends State<GroupScreen> {
                   ),
                 ),
               ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Podsetnik dan ranije'),
+                subtitle: Text(
+                  reminderDayBefore
+                      ? 'U 08:00 dan pre provere'
+                      : 'U 08:00 na dan provere',
+                ),
+                value: reminderDayBefore,
+                onChanged: (v) =>
+                    setLocal(() => reminderDayBefore = v ?? true),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
           ];
 
           return AlertDialog(
@@ -687,8 +702,32 @@ class _GroupScreenState extends State<GroupScreen> {
       noteText: noteText,
       amount: amount,
       checkDate: checkDate,
-      reminderAt: checkDate?.subtract(const Duration(days: 1)),
+      reminderAt: _reminderAtFromCheckDate(
+        checkDate,
+        dayBefore: reminderDayBefore,
+      ),
     );
+  }
+
+  /// Podsetnik u 08:00 lokalnog vremena — dan pre ili na dan provere.
+  static DateTime? _reminderAtFromCheckDate(
+    DateTime? checkDate, {
+    required bool dayBefore,
+  }) {
+    if (checkDate == null) return null;
+    final local = checkDate.toLocal();
+    var day = DateTime(local.year, local.month, local.day);
+    if (dayBefore) day = day.subtract(const Duration(days: 1));
+    return DateTime(day.year, day.month, day.day, 8, 0);
+  }
+
+  static bool _isReminderDayBefore(DateTime? checkDate, DateTime? reminderAt) {
+    if (checkDate == null || reminderAt == null) return true;
+    final check = checkDate.toLocal();
+    final rem = reminderAt.toLocal();
+    final checkDay = DateTime(check.year, check.month, check.day);
+    final remDay = DateTime(rem.year, rem.month, rem.day);
+    return remDay.isBefore(checkDay);
   }
 
   /// Vraća true ako je košnica uspešno dodata.
@@ -862,6 +901,10 @@ class _GroupScreenState extends State<GroupScreen> {
       text: item.amount != null ? '${item.amount}' : '',
     );
     DateTime? checkDate = item.checkDate;
+    var reminderDayBefore = _isReminderDayBefore(
+      item.checkDate,
+      item.reminderAt,
+    );
 
     final ok = await showDialog<bool>(
       context: context,
@@ -905,7 +948,7 @@ class _GroupScreenState extends State<GroupScreen> {
                 maxLines: 2,
               ),
             if (widget.groupType == 'CONTROL' ||
-                widget.groupType == 'QUEEN_CHANGE')
+                widget.groupType == 'QUEEN_CHANGE') ...[
               Align(
                 alignment: Alignment.centerLeft,
                 child: OutlinedButton.icon(
@@ -928,6 +971,20 @@ class _GroupScreenState extends State<GroupScreen> {
                   ),
                 ),
               ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Podsetnik dan ranije'),
+                subtitle: Text(
+                  reminderDayBefore
+                      ? 'U 08:00 dan pre provere'
+                      : 'U 08:00 na dan provere',
+                ),
+                value: reminderDayBefore,
+                onChanged: (v) =>
+                    setLocal(() => reminderDayBefore = v ?? true),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
           ];
 
           return AlertDialog(
@@ -978,7 +1035,10 @@ class _GroupScreenState extends State<GroupScreen> {
     }
     if (widget.groupType == 'CONTROL' || widget.groupType == 'QUEEN_CHANGE') {
       item.checkDate = checkDate;
-      item.reminderAt = checkDate?.subtract(const Duration(days: 1));
+      item.reminderAt = _reminderAtFromCheckDate(
+        checkDate,
+        dayBefore: reminderDayBefore,
+      );
     }
 
     item.touch();

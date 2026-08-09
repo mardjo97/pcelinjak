@@ -7,5 +7,6 @@
 
     <include file="changes/20260809-00-initial-schema.xml" relativeToChangelogFile="true"/>
     <include file="changes/20260809-work-group-dedupe-and-unique.xml" relativeToChangelogFile="true"/>
+    <include file="changes/20260809-02-inspection-health-status.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

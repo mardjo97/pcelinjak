@@ -255,12 +255,47 @@ const inspectionChecklistStatuses = {
   'CRITICAL': 'Kritično',
 };
 
+/// Temperament društva pri otvaranju (mirne → agresivne).
+const inspectionTemperStatuses = {
+  'NOT_CHECKED': 'Nije provereno',
+  'CALM': 'Mirne',
+  'NERVOUS': 'Nervozne',
+  'AGGRESSIVE': 'Agresivne',
+};
+
+/// Zdravlje: varoa / bolesti / štetočine (jedno polje za teren).
+const inspectionHealthStatuses = {
+  'NOT_CHECKED': 'Nije provereno',
+  'OK': 'U redu',
+  'ATTENTION': 'Pažnja',
+  'ISSUE': 'Problem',
+};
+
 const inspectionStrengthStatuses = {
   'NOT_CHECKED': 'Nije provereno',
   'WEAK': 'Slaba',
   'MEDIUM': 'Srednja',
   'STRONG': 'Jaka',
 };
+
+/// Stari checklist temper → nova skala.
+String normalizeInspectionTemperStatus(String? value) {
+  switch (value) {
+    case 'GOOD':
+      return 'CALM';
+    case 'ATTENTION':
+      return 'NERVOUS';
+    case 'CRITICAL':
+      return 'AGGRESSIVE';
+    case 'CALM':
+    case 'NERVOUS':
+    case 'AGGRESSIVE':
+    case 'NOT_CHECKED':
+      return value!;
+    default:
+      return 'NOT_CHECKED';
+  }
+}
 
 class Inspection extends SyncRecord {
   String hiveUuid;
@@ -271,6 +306,7 @@ class Inspection extends SyncRecord {
   String broodStatus;
   String foodStatus;
   String temperStatus;
+  String healthStatus;
   String strengthStatus;
   DateTime? followUpAt;
   String? sourceType;
@@ -287,6 +323,7 @@ class Inspection extends SyncRecord {
     this.broodStatus = 'NOT_CHECKED',
     this.foodStatus = 'NOT_CHECKED',
     this.temperStatus = 'NOT_CHECKED',
+    this.healthStatus = 'NOT_CHECKED',
     this.strengthStatus = 'NOT_CHECKED',
     this.followUpAt,
     this.sourceType,
@@ -308,6 +345,7 @@ class Inspection extends SyncRecord {
     'broodStatus': broodStatus,
     'foodStatus': foodStatus,
     'temperStatus': temperStatus,
+    'healthStatus': healthStatus,
     'strengthStatus': strengthStatus,
     'followUpAt': followUpAt?.toUtc().toIso8601String(),
     'sourceType': sourceType,
@@ -325,6 +363,7 @@ class Inspection extends SyncRecord {
     'broodStatus': broodStatus,
     'foodStatus': foodStatus,
     'temperStatus': temperStatus,
+    'healthStatus': healthStatus,
     'strengthStatus': strengthStatus,
     'followUpAt': followUpAt?.toUtc().toIso8601String(),
     'sourceType': sourceType,
@@ -341,7 +380,8 @@ class Inspection extends SyncRecord {
     queenStatus: (m['queenStatus'] as String?) ?? 'NOT_CHECKED',
     broodStatus: (m['broodStatus'] as String?) ?? 'NOT_CHECKED',
     foodStatus: (m['foodStatus'] as String?) ?? 'NOT_CHECKED',
-    temperStatus: (m['temperStatus'] as String?) ?? 'NOT_CHECKED',
+    temperStatus: normalizeInspectionTemperStatus(m['temperStatus'] as String?),
+    healthStatus: (m['healthStatus'] as String?) ?? 'NOT_CHECKED',
     strengthStatus: (m['strengthStatus'] as String?) ?? 'NOT_CHECKED',
     followUpAt: m['followUpAt'] != null
         ? DateTime.tryParse('${m['followUpAt']}')

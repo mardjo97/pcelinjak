@@ -34,6 +34,9 @@ public class Inspection extends SyncEntity {
     @Column(name = "temper_status", nullable = false, length = 32)
     public String temperStatus = "NOT_CHECKED";
 
+    @Column(name = "health_status", nullable = false, length = 32)
+    public String healthStatus = "NOT_CHECKED";
+
     @Column(name = "strength_status", nullable = false, length = 32)
     public String strengthStatus = "NOT_CHECKED";
 

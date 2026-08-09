@@ -210,6 +210,17 @@ const queenEndReasons = {
   'OTHER': 'Drugo',
 };
 
+/// Tekuća i prethodne 4 godine (ciklus markiranja). [includeYear] ako je van opsega.
+List<int> queenYearChoices({int? includeYear}) {
+  final now = DateTime.now().year;
+  final years = [for (var i = 0; i < 5; i++) now - i];
+  if (includeYear != null && !years.contains(includeYear)) {
+    years.add(includeYear);
+    years.sort((a, b) => b.compareTo(a));
+  }
+  return years;
+}
+
 /// Status košnice (lokalno + sync).
 const hiveStatuses = {
   'ACTIVE': 'Aktivna',

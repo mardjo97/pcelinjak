@@ -115,6 +115,13 @@ class _HiveInspectionsScreenState extends State<HiveInspectionsScreen> {
                   ),
                 ),
                 _detailRow(
+                  'Jačina',
+                  inspectionValueLabel(
+                    inspectionStrengthStatuses,
+                    inspection.strengthStatus,
+                  ),
+                ),
+                _detailRow(
                   'Hrana',
                   inspectionValueLabel(
                     inspectionChecklistStatuses,
@@ -124,15 +131,15 @@ class _HiveInspectionsScreenState extends State<HiveInspectionsScreen> {
                 _detailRow(
                   'Temperament',
                   inspectionValueLabel(
-                    inspectionChecklistStatuses,
-                    inspection.temperStatus,
+                    inspectionTemperStatuses,
+                    normalizeInspectionTemperStatus(inspection.temperStatus),
                   ),
                 ),
                 _detailRow(
-                  'Jačina',
+                  'Zdravlje',
                   inspectionValueLabel(
-                    inspectionStrengthStatuses,
-                    inspection.strengthStatus,
+                    inspectionHealthStatuses,
+                    inspection.healthStatus,
                   ),
                 ),
                 if (inspection.followUpAt != null)

@@ -24,7 +24,7 @@ class AppDatabase {
     final path = join(await getDatabasesPath(), 'pcelinjak.db');
     _db = await openDatabase(
       path,
-      version: 9,
+      version: 10,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -95,6 +95,19 @@ class AppDatabase {
           dateSynched TEXT,
           dateDeleted TEXT
         )
+      ''');
+    }
+    if (oldVersion < 10) {
+      await db.execute(
+        "ALTER TABLE inspection ADD COLUMN healthStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED'",
+      );
+      await db.execute('''
+        UPDATE inspection SET temperStatus = CASE temperStatus
+          WHEN 'GOOD' THEN 'CALM'
+          WHEN 'ATTENTION' THEN 'NERVOUS'
+          WHEN 'CRITICAL' THEN 'AGGRESSIVE'
+          ELSE temperStatus
+        END
       ''');
     }
   }
@@ -236,6 +249,7 @@ class AppDatabase {
         broodStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
         foodStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
         temperStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
+        healthStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
         strengthStatus TEXT NOT NULL DEFAULT 'NOT_CHECKED',
         followUpAt TEXT,
         sourceType TEXT,
