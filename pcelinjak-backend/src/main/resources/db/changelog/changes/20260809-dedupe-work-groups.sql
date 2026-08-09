@@ -1,7 +1,11 @@
 -- Dedupe active work_group rows: one canonical group per (user_id, group_type).
--- Memberships move to the group with most hives (then oldest). Duplicates are soft-deleted.
+-- MySQL cannot join the same TEMPORARY table twice in one statement, so we
+-- materialize winners/losers into separate temp tables.
 
 DROP TEMPORARY TABLE IF EXISTS wg_ranked;
+DROP TEMPORARY TABLE IF EXISTS wg_winners;
+DROP TEMPORARY TABLE IF EXISTS wg_losers;
+
 CREATE TEMPORARY TABLE wg_ranked AS
 SELECT
   wg.id,
@@ -22,24 +26,29 @@ SELECT
 FROM work_group wg
 WHERE wg.date_deleted IS NULL;
 
+CREATE TEMPORARY TABLE wg_winners AS
+SELECT * FROM wg_ranked WHERE rn = 1;
+
+CREATE TEMPORARY TABLE wg_losers AS
+SELECT * FROM wg_ranked WHERE rn > 1;
+
 UPDATE work_group_hive wgh
-INNER JOIN wg_ranked loser
+INNER JOIN wg_losers loser
   ON loser.uuid = wgh.group_uuid
- AND loser.rn > 1
-INNER JOIN wg_ranked winner
+INNER JOIN wg_winners winner
   ON winner.user_id = loser.user_id
  AND winner.group_type = loser.group_type
- AND winner.rn = 1
 SET
   wgh.group_uuid = winner.uuid,
   wgh.date_modified = UTC_TIMESTAMP(3);
 
 UPDATE work_group wg
-INNER JOIN wg_ranked r
-  ON r.uuid = wg.uuid
- AND r.rn > 1
+INNER JOIN wg_losers loser
+  ON loser.uuid = wg.uuid
 SET
   wg.date_deleted = UTC_TIMESTAMP(3),
   wg.date_modified = UTC_TIMESTAMP(3);
 
+DROP TEMPORARY TABLE IF EXISTS wg_losers;
+DROP TEMPORARY TABLE IF EXISTS wg_winners;
 DROP TEMPORARY TABLE IF EXISTS wg_ranked;

@@ -1,16 +1,12 @@
--- Manual / emergency fallback for the Liquibase changeSets in:
---   pcelinjak-backend/src/main/resources/db/changelog/changes/20260809-work-group-dedupe-and-unique.xml
---
--- Prefer: deploy backend — Liquibase runs automatically (dedupe, then unique).
---
--- Usage if you must run by hand before unique exists:
---   bash deploy/scripts/dedupe-work-groups.sh
---
--- Order matches Liquibase: 1) dedupe  2) active_type_key  3) unique index
+-- Manual / emergency fallback for Liquibase work-group dedupe + unique.
+-- Prefer backend deploy (Liquibase). MySQL cannot join one TEMP table twice.
 
 START TRANSACTION;
 
 DROP TEMPORARY TABLE IF EXISTS wg_ranked;
+DROP TEMPORARY TABLE IF EXISTS wg_winners;
+DROP TEMPORARY TABLE IF EXISTS wg_losers;
+
 CREATE TEMPORARY TABLE wg_ranked AS
 SELECT
   wg.id,
@@ -31,26 +27,31 @@ SELECT
 FROM work_group wg
 WHERE wg.date_deleted IS NULL;
 
+CREATE TEMPORARY TABLE wg_winners AS
+SELECT * FROM wg_ranked WHERE rn = 1;
+
+CREATE TEMPORARY TABLE wg_losers AS
+SELECT * FROM wg_ranked WHERE rn > 1;
+
 UPDATE work_group_hive wgh
-INNER JOIN wg_ranked loser
+INNER JOIN wg_losers loser
   ON loser.uuid = wgh.group_uuid
- AND loser.rn > 1
-INNER JOIN wg_ranked winner
+INNER JOIN wg_winners winner
   ON winner.user_id = loser.user_id
  AND winner.group_type = loser.group_type
- AND winner.rn = 1
 SET
   wgh.group_uuid = winner.uuid,
   wgh.date_modified = UTC_TIMESTAMP(3);
 
 UPDATE work_group wg
-INNER JOIN wg_ranked r
-  ON r.uuid = wg.uuid
- AND r.rn > 1
+INNER JOIN wg_losers loser
+  ON loser.uuid = wg.uuid
 SET
   wg.date_deleted = UTC_TIMESTAMP(3),
   wg.date_modified = UTC_TIMESTAMP(3);
 
+DROP TEMPORARY TABLE IF EXISTS wg_losers;
+DROP TEMPORARY TABLE IF EXISTS wg_winners;
 DROP TEMPORARY TABLE IF EXISTS wg_ranked;
 
 SET @col_exists := (
@@ -88,12 +89,3 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 COMMIT;
-
-SELECT
-  user_id,
-  group_type,
-  COUNT(*) AS active_groups
-FROM work_group
-WHERE date_deleted IS NULL
-GROUP BY user_id, group_type
-ORDER BY user_id, group_type;

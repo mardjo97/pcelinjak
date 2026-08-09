@@ -5,8 +5,19 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
+    <!-- Clear previous failed run (MySQL temp-table double-join bug). -->
+    <changeSet id="20260809-01-clear-failed-dedupe" author="dmarkovic" dbms="mysql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="DATABASECHANGELOG"/>
+        </preConditions>
+        <sql>
+            DELETE FROM DATABASECHANGELOG
+            WHERE ID = '20260809-01-dedupe-work-groups';
+        </sql>
+    </changeSet>
+
     <!-- 1) Prvo dedupe — unique ne sme pasti na postojećim duplikatima -->
-    <changeSet id="20260809-01-dedupe-work-groups" author="dmarkovic" dbms="mysql">
+    <changeSet id="20260809-01-dedupe-work-groups-v2" author="dmarkovic" dbms="mysql">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="work_group"/>
             <tableExists tableName="work_group_hive"/>
