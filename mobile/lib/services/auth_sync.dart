@@ -66,6 +66,7 @@ class SyncService {
   Future<String> fullSync() async {
     final pushed = await pushPending();
     await _pullAll();
+    await db.dedupeWorkGroups();
     return pushed;
   }
 
@@ -78,7 +79,7 @@ class SyncService {
     count += await _pushTable('note', '/api/notes/sync', (m) => m);
     count += await _pushTable('harvest', '/api/harvests/sync', (m) => m);
     count += await _pushTable('inspection', '/api/inspections/sync', (m) => m);
-    count += await _pushTable('work_group', '/api/work-groups/sync', _boolish);
+    count += await _pushWorkGroups();
     count += await _pushTable(
       'work_group_hive',
       '/api/work-group-hives/sync',
@@ -86,6 +87,34 @@ class SyncService {
     );
     count += await _pushTable('reminder', '/api/reminders/sync', _boolish);
     return 'Poslato $count zapisa';
+  }
+
+  /// Sync grupa: ako server vrati drugi (kanonski) UUID, lokalna članstva se prebacuju.
+  Future<int> _pushWorkGroups() async {
+    final dirty = await db.dirty('work_group');
+    if (dirty.isEmpty) return 0;
+    final payload = dirty.map(_boolish).toList();
+    final res =
+        await api.post('/api/work-groups/sync', payload) as Map<String, dynamic>;
+    final items = (res['items'] as List?) ?? [];
+    final now = DateTime.now();
+
+    for (var i = 0; i < dirty.length; i++) {
+      final localUuid = dirty[i]['uuid'] as String?;
+      if (localUuid == null) continue;
+      String? serverUuid;
+      if (i < items.length) {
+        serverUuid = (items[i] as Map)['uuid'] as String?;
+      }
+      if (serverUuid != null &&
+          serverUuid.isNotEmpty &&
+          serverUuid != localUuid) {
+        await db.remapWorkGroupUuid(localUuid, serverUuid);
+        await db.softDeleteWorkGroup(localUuid);
+      }
+      await db.markSynched('work_group', serverUuid ?? localUuid, now);
+    }
+    return dirty.length;
   }
 
   Map<String, dynamic> _boolish(Map<String, dynamic> m) {

@@ -11,6 +11,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import rs.pcelinjak.dto.SyncDtos;
+import rs.pcelinjak.entity.WorkGroup;
 import rs.pcelinjak.entity.WorkGroupHive;
 
 import java.util.List;
@@ -35,6 +36,9 @@ public class WorkGroupHiveResource {
         SyncDtos.SyncResponse<SyncDtos.WorkGroupHiveItem> res = new SyncDtos.SyncResponse<>();
         if (items != null) {
             for (SyncDtos.WorkGroupHiveItem item : items) {
+                if (item != null) {
+                    item.groupUuid = resolveCanonicalGroupUuid(userId, item.groupUuid);
+                }
                 WorkGroupHive e = SyncSupport.upsert(userId, item, WorkGroupHive::findByUuid, WorkGroupHive::new, (g, d) -> {
                     g.groupUuid = d.groupUuid;
                     g.hiveUuid = d.hiveUuid;
@@ -60,6 +64,26 @@ public class WorkGroupHiveResource {
             }
         }
         return Response.ok(res).build();
+    }
+
+    /**
+     * Članstvo mora da visi na aktivnoj grupi. Ako klijent pošalje UUID
+     * soft-obrisane / nepostojeće grupe, prebaci na kanonsku po tipu.
+     */
+    private static String resolveCanonicalGroupUuid(Long userId, String groupUuid) {
+        if (groupUuid == null || groupUuid.isBlank()) {
+            return groupUuid;
+        }
+        WorkGroup group = WorkGroup.findByUuid(groupUuid.trim());
+        if (group != null && group.userId.equals(userId) && group.dateDeleted == null) {
+            return group.uuid;
+        }
+        String type = group != null ? group.groupType : null;
+        if (type == null || type.isBlank()) {
+            return groupUuid;
+        }
+        WorkGroup active = WorkGroup.findActiveByUserAndType(userId, type);
+        return active != null ? active.uuid : groupUuid;
     }
 
     private SyncDtos.WorkGroupHiveItem toDto(WorkGroupHive g) {

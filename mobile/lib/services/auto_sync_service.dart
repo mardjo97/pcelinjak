@@ -9,7 +9,7 @@ import 'auth_sync.dart';
 
 /// Automatski šalje lokalne izmene na server kada postoji veza.
 /// Bez veze sve ostaje lokalno (offline-first).
-class AutoSyncService with WidgetsBindingObserver {
+class AutoSyncService with WidgetsBindingObserver, ChangeNotifier {
   AutoSyncService._();
   static final AutoSyncService instance = AutoSyncService._();
 
@@ -70,6 +70,13 @@ class AutoSyncService with WidgetsBindingObserver {
     });
   }
 
+  /// Odmah uradi full sync (npr. posle logina).
+  Future<void> syncNow() async {
+    _debounce?.cancel();
+    _wantFull = true;
+    await _run();
+  }
+
   Future<void> _run() async {
     if (_running) {
       _pendingAfterRun = true;
@@ -96,6 +103,9 @@ class AutoSyncService with WidgetsBindingObserver {
       // Nema veze ili greška servera — ostaje lokalno.
     } finally {
       _running = false;
+      if (doFull) {
+        notifyListeners();
+      }
       if (_pendingAfterRun) {
         _pendingAfterRun = false;
         schedulePush();

@@ -34,6 +34,9 @@
   "createAccount": "Create account",
   "registerCheckEmailActivation": "Check your email (inbox and spam) and click the activation link.",
   "continueOffline": "Continue offline (no sync)",
+  "offlineDataWarning": "You are using the app without signing in. Data on this phone may be lost when you sign in.",
+  "offlineContinueConfirm": "Without an account, data stays only on this phone and may be lost when you later sign in.\n\nContinue offline?",
+  "loginReplaceDataConfirm": "Local data on this phone may be replaced by account data. Continue signing in?",
   "authDeviceNote": "Only one phone can be signed in. Signing in on a new device signs out the old one.",
   "myApiaryHives": "My apiary · {count} hives total",
   "@myApiaryHives": {
@@ -53,6 +56,7 @@
   "settings": "Settings",
   "exportBarcodes": "Export barcodes",
   "logout": "Sign out",
+  "goToLogin": "Go to sign in",
   "addApiary": "Add apiary",
   "apiariesSection": "Apiaries",
   "apiariesSectionHint": "Permanent locations and hives",

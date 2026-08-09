@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../database/app_database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import '../services/auth_sync.dart';
@@ -27,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _hidCtrl = TextEditingController();
   bool _loading = true;
   bool _saving = false;
+  bool _loggedIn = false;
 
   @override
   void initState() {
@@ -43,12 +45,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     final session = await widget.api.session();
+    final loggedIn = await widget.api.isLoggedIn();
     final name = await BeekeeperPrefs.reportName(fallback: session['name']);
     final hid = await BeekeeperPrefs.hid();
     if (!mounted) return;
     setState(() {
       _nameCtrl.text = name;
       _hidCtrl.text = hid;
+      _loggedIn = loggedIn;
       _loading = false;
     });
   }
@@ -72,6 +76,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     AutoSyncService.instance.stop();
     await AuthService(widget.api).logout();
     if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => AuthScreen(api: widget.api)),
+      (_) => false,
+    );
+  }
+
+  void _goToLogin() async {
+    final l10n = AppLocalizations.of(context);
+    final hiveCount = await AppDatabase.instance.hiveCount();
+    final apiaries = await AppDatabase.instance.listApiaries();
+    final hasLocal = hiveCount > 0 || apiaries.isNotEmpty;
+    if (!mounted) return;
+    if (hasLocal) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.goToLogin),
+          content: Text(l10n.loginReplaceDataConfirm),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.goToLogin),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => AuthScreen(api: widget.api)),
       (_) => false,
@@ -184,24 +220,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 _sectionTitle(l10n.settingsDanger),
                 OutlinedButton.icon(
-                  onPressed: _logout,
-                  icon: const Icon(Icons.logout),
-                  label: Text(l10n.logout),
+                  onPressed: _loggedIn ? _logout : _goToLogin,
+                  icon: Icon(_loggedIn ? Icons.logout : Icons.login),
+                  label: Text(_loggedIn ? l10n.logout : l10n.goToLogin),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                   ),
                 ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _deleteAccount,
-                  icon: Icon(Icons.delete_forever, color: Colors.red.shade700),
-                  label: Text(l10n.deleteAccount, style: TextStyle(color: Colors.red.shade700)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red.shade700,
-                    side: BorderSide(color: Colors.red.shade300),
-                    minimumSize: const Size.fromHeight(48),
+                if (_loggedIn) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _deleteAccount,
+                    icon: Icon(Icons.delete_forever, color: Colors.red.shade700),
+                    label: Text(l10n.deleteAccount, style: TextStyle(color: Colors.red.shade700)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red.shade700,
+                      side: BorderSide(color: Colors.red.shade300),
+                      minimumSize: const Size.fromHeight(48),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
     );

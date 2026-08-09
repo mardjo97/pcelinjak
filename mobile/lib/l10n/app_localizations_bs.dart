@@ -107,10 +107,22 @@ class AppLocalizationsBs extends AppLocalizations {
 
   @override
   String get registerCheckEmailActivation =>
-      'Provjerite email (inbox i spam) i kliknite aktivacijski link.';
+      'Proverite email (inbox i spam) i kliknite aktivacioni link.';
 
   @override
   String get continueOffline => 'Nastavi offline (bez sync-a)';
+
+  @override
+  String get offlineDataWarning =>
+      'Radite bez prijave. Podaci sa ovog telefona mogu se izgubiti kada se prijavite.';
+
+  @override
+  String get offlineContinueConfirm =>
+      'Bez naloga podaci ostaju samo na ovom telefonu i mogu se izgubiti pri kasnijoj prijavi.\n\nNastaviti offline?';
+
+  @override
+  String get loginReplaceDataConfirm =>
+      'Lokalni podaci sa ovog telefona mogu se zameniti podacima sa naloga. Nastaviti sa prijavom?';
 
   @override
   String get authDeviceNote =>
@@ -143,6 +155,9 @@ class AppLocalizationsBs extends AppLocalizations {
 
   @override
   String get logout => 'Odjavi se';
+
+  @override
+  String get goToLogin => 'Idi na prijavu';
 
   @override
   String get addApiary => 'Dodaj pčelinjak';
@@ -200,7 +215,7 @@ class AppLocalizationsBs extends AppLocalizations {
 
   @override
   String get syncIntro =>
-      'Izmene se šalju automatski kad ima interneta. Offline radite lokalno — sync ovdje pošalje i povuče sve sa servera.';
+      'Izmene se šalju automatski kad ima interneta. Offline radite lokalno — sync ovde pošalje i povuče sve sa servera.';
 
   @override
   String get syncAllDone => 'Sve lokalne izmene su sinhronizovane.';
@@ -452,7 +467,7 @@ class AppLocalizationsBs extends AppLocalizations {
   String get themeSystem => 'Automatski (sistem)';
 
   @override
-  String get themeLight => 'Svijetla';
+  String get themeLight => 'Svetla';
 
   @override
   String get themeDark => 'Tamna';
@@ -461,7 +476,7 @@ class AppLocalizationsBs extends AppLocalizations {
   String get settingsAppearance => 'Izgled';
 
   @override
-  String get settingsReports => 'Izvještaji i server';
+  String get settingsReports => 'Izveštaji i server';
 
   @override
   String get settingsSupport => 'Podrška';
@@ -476,11 +491,11 @@ class AppLocalizationsBs extends AppLocalizations {
   String get privacyTitle => 'Politika privatnosti – Pčelinjak';
 
   @override
-  String get privacyUpdated => 'Posljednje ažuriranje: juli 2026.';
+  String get privacyUpdated => 'Poslednje ažuriranje: jul 2026.';
 
   @override
   String get privacyBody =>
-      'Aplikacija Pčelinjak prikuplja podatke neophodne za evidenciju pčelinjaka i sinhronizaciju sa serverom.\n\n1. Podaci o nalogu\nČuvamo email, ime, telefon (opciono) i heš lozinke. Jedan uređaj može biti aktivan po nalogu.\n\n2. Podaci o pčelinjaku\nKošnice, matici, napomene, prinosi, grupe rada i podsetnici čuvaju se lokalno na uređaju i, kada koristite sync, na našem serveru vezano za vaš nalog.\n\n3. Feedback\nAko pošaljete povratnu informaciju, poruka i email se čuvaju radi unapređenja aplikacije.\n\n4. Dijeljenje\nNe prodajemo lične podatke trećim stranama. Podaci se koriste isključivo za funkcionisanje aplikacije.\n\n5. Brisanje\nMožete obrisati nalog u Postavkama uz potvrdu lozinke. Time se brišu podaci na serveru i lokalno na uređaju.\n\n6. Kontakt\nZa pitanja o privatnosti koristite Feedback u aplikaciji.';
+      'Aplikacija Pčelinjak prikuplja podatke neophodne za evidenciju pčelinjaka i sinhronizaciju sa serverom.\n\n1. Podaci o nalogu\nČuvamo email, ime, telefon (opciono) i heš lozinke. Jedan uređaj može biti aktivan po nalogu.\n\n2. Podaci o pčelinjaku\nKošnice, matici, napomene, prinosi, grupe rada i podsetnici čuvaju se lokalno na uređaju i, kada koristite sync, na našem serveru vezano za vaš nalog.\n\n3. Feedback\nAko pošaljete povratnu informaciju, poruka i email se čuvaju radi unapređenja aplikacije.\n\n4. Deljenje\nNe prodajemo lične podatke trećim stranama. Podaci se koriste isključivo za funkcionisanje aplikacije.\n\n5. Brisanje\nMožete obrisati nalog u Podešavanjima uz potvrdu lozinke. Time se brišu podaci na serveru i lokalno na uređaju.\n\n6. Kontakt\nZa pitanja o privatnosti koristite Feedback u aplikaciji.';
 
   @override
   String get feedback => 'Povratna informacija';
@@ -496,7 +511,7 @@ class AppLocalizationsBs extends AppLocalizations {
   String get feedbackRequired => 'Unesite poruku.';
 
   @override
-  String get feedbackThanks => 'Hvala! Poruka je poslana.';
+  String get feedbackThanks => 'Hvala! Poruka je poslata.';
 
   @override
   String get sendFeedback => 'Pošalji';

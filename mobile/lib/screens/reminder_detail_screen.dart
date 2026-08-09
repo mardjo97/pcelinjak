@@ -268,7 +268,9 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
                     label: const Text('Otvori grupu'),
                   ),
                 ],
-                if (_hive != null) ...[
+                if (_hive != null &&
+                    (_inspection != null ||
+                        _group?.groupType == 'CONTROL')) ...[
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: _createOrEditInspection,

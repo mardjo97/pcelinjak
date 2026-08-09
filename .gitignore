@@ -31,6 +31,9 @@ deploy/.backup.env
 *.sql
 *.sql.gz
 *.tar.gz
+# Keep schema migrations and ops SQL scripts
+!pcelinjak-backend/src/main/resources/db/**/*.sql
+!deploy/scripts/*.sql
 
 # Deploy secrets (use config.example as template)
 deploy/config

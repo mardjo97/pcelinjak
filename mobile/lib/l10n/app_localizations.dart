@@ -308,6 +308,24 @@ abstract class AppLocalizations {
   /// **'Nastavi offline (bez sync-a)'**
   String get continueOffline;
 
+  /// No description provided for @offlineDataWarning.
+  ///
+  /// In sr, this message translates to:
+  /// **'Radite bez prijave. Podaci sa ovog telefona mogu se izgubiti kada se prijavite.'**
+  String get offlineDataWarning;
+
+  /// No description provided for @offlineContinueConfirm.
+  ///
+  /// In sr, this message translates to:
+  /// **'Bez naloga podaci ostaju samo na ovom telefonu i mogu se izgubiti pri kasnijoj prijavi.\n\nNastaviti offline?'**
+  String get offlineContinueConfirm;
+
+  /// No description provided for @loginReplaceDataConfirm.
+  ///
+  /// In sr, this message translates to:
+  /// **'Lokalni podaci sa ovog telefona mogu se zameniti podacima sa naloga. Nastaviti sa prijavom?'**
+  String get loginReplaceDataConfirm;
+
   /// No description provided for @authDeviceNote.
   ///
   /// In sr, this message translates to:
@@ -361,6 +379,12 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Odjavi se'**
   String get logout;
+
+  /// No description provided for @goToLogin.
+  ///
+  /// In sr, this message translates to:
+  /// **'Idi na prijavu'**
+  String get goToLogin;
 
   /// No description provided for @addApiary.
   ///

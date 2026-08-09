@@ -59,12 +59,16 @@ class _GroupScreenState extends State<GroupScreen> {
   }
 
   Future<void> _reload() async {
+    await db.dedupeWorkGroups();
     var group = await db.workGroupByType(widget.groupType);
     if (group == null) {
       group = WorkGroup(uuid: db.newUuid(), groupType: widget.groupType);
       await db.upsertWorkGroup(group);
     }
-    final items = await db.groupHives(group.uuid, filter: _filter);
+    final items = await db.groupHivesByType(
+      widget.groupType,
+      filter: _filter,
+    );
     final map = <String, Hive>{};
     final apiaries = <String, Apiary>{};
     final queens = <String, Queen>{};
@@ -190,19 +194,30 @@ class _GroupScreenState extends State<GroupScreen> {
       });
     }
 
+    void showReject(StateSetter setLocal, String message) {
+      setLocal(() => flash = message);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(message)));
+    }
+
     Future<void> appendHive(StateSetter setLocal, Hive hive) async {
       if (pending.any((item) => item.uuid == hive.uuid)) {
-        setLocal(() => flash = 'Već u listi: ${hive.barcode}');
+        showReject(setLocal, 'Već u listi: ${hive.barcode}');
         return;
       }
-      final resolved = await _resolveHiveForGroup(hive.barcode, silent: true);
-      if (resolved == null) {
-        setLocal(() => flash = 'Ne može da se doda: ${hive.barcode}');
+      final resolved = await _resolveHiveForGroup(hive.barcode);
+      if (resolved.hive == null) {
+        showReject(
+          setLocal,
+          resolved.error ?? 'Ne može da se doda: ${hive.barcode}',
+        );
         return;
       }
       setLocal(() {
-        pending.add(resolved);
-        flash = 'Dodato: ${resolved.barcode}';
+        pending.add(resolved.hive!);
+        flash = 'Dodato: ${resolved.hive!.barcode}';
       });
     }
 
@@ -271,14 +286,11 @@ class _GroupScreenState extends State<GroupScreen> {
                                             ),
                                           );
                                           final hive =
-                                              await _resolveHiveForGroup(
-                                                raw,
-                                                silent: true,
-                                              );
+                                              await db.findHiveByBarcode(raw);
                                           if (hive == null) {
-                                            setLocal(
-                                              () =>
-                                                  flash = 'Nije pogodna: $raw',
+                                            showReject(
+                                              setLocal,
+                                              'Nije u bazi: $raw',
                                             );
                                             return;
                                           }
@@ -358,61 +370,104 @@ class _GroupScreenState extends State<GroupScreen> {
                                         ? const Center(
                                             child: CircularProgressIndicator(),
                                           )
-                                        : hits.isEmpty
-                                        ? _PendingHiveList(
-                                            hives: pending,
-                                            emptyText:
-                                                'Pretražite i izaberite postojeću košnicu.',
-                                            onRemove: (i) => setLocal(
-                                              () => pending.removeAt(i),
-                                            ),
-                                          )
-                                        : Column(
-                                            children: [
-                                              Expanded(
-                                                child: ListView.separated(
-                                                  itemCount: hits.length,
-                                                  separatorBuilder: (_, _) =>
-                                                      const Divider(height: 1),
-                                                  itemBuilder: (context, i) {
-                                                    final hit = hits[i];
-                                                    final hive = hit.hive;
-                                                    return ListTile(
-                                                      title: Text(
-                                                        '${hive.barcode} · ${hive.hiveType}',
-                                                      ),
-                                                      subtitle: Text(
-                                                        hit.apiary == null
-                                                            ? 'Košnica ${hive.orderNumber}'
-                                                            : 'Pčelinjak ${hit.apiary!.workNumber} · ${hit.apiary!.name}\nKošnica ${hive.orderNumber}',
-                                                      ),
-                                                      isThreeLine:
-                                                          hit.apiary != null,
-                                                      trailing: const Icon(
-                                                        Icons
-                                                            .add_circle_outline,
-                                                      ),
-                                                      onTap: () async =>
-                                                          appendHive(
-                                                            setLocal,
-                                                            hive,
-                                                          ),
-                                                    );
-                                                  },
-                                                ),
-                                              ),
-                                              const SizedBox(height: 12),
-                                              Expanded(
-                                                child: _PendingHiveList(
+                                        : Builder(
+                                            builder: (context) {
+                                              final availableHits = hits
+                                                  .where(
+                                                    (hit) => !pending.any(
+                                                      (p) =>
+                                                          p.uuid ==
+                                                          hit.hive.uuid,
+                                                    ),
+                                                  )
+                                                  .toList();
+                                              if (hits.isEmpty) {
+                                                return _PendingHiveList(
                                                   hives: pending,
                                                   emptyText:
-                                                      'Još nema izabranih košnica.',
+                                                      'Pretražite i izaberite postojeću košnicu.',
                                                   onRemove: (i) => setLocal(
                                                     () => pending.removeAt(i),
                                                   ),
-                                                ),
-                                              ),
-                                            ],
+                                                );
+                                              }
+                                              return Column(
+                                                children: [
+                                                  Expanded(
+                                                    child: availableHits.isEmpty
+                                                        ? Center(
+                                                            child: Text(
+                                                              pending.isEmpty
+                                                                  ? 'Nema rezultata.'
+                                                                  : 'Sve pronađene košnice su već izabrane.',
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              style: TextStyle(
+                                                                color:
+                                                                    AppTheme.muted(
+                                                                      context,
+                                                                    ),
+                                                              ),
+                                                            ),
+                                                          )
+                                                        : ListView.separated(
+                                                            itemCount:
+                                                                availableHits
+                                                                    .length,
+                                                            separatorBuilder:
+                                                                (_, _) =>
+                                                                    const Divider(
+                                                                      height: 1,
+                                                                    ),
+                                                            itemBuilder:
+                                                                (context, i) {
+                                                              final hit =
+                                                                  availableHits[i];
+                                                              final hive =
+                                                                  hit.hive;
+                                                              return ListTile(
+                                                                title: Text(
+                                                                  '${hive.barcode} · ${hive.hiveType}',
+                                                                ),
+                                                                subtitle: Text(
+                                                                  hit.apiary ==
+                                                                          null
+                                                                      ? 'Košnica ${hive.orderNumber}'
+                                                                      : 'Pčelinjak ${hit.apiary!.workNumber} · ${hit.apiary!.name}\nKošnica ${hive.orderNumber}',
+                                                                ),
+                                                                isThreeLine:
+                                                                    hit.apiary !=
+                                                                    null,
+                                                                trailing:
+                                                                    const Icon(
+                                                                      Icons
+                                                                          .add_circle_outline,
+                                                                    ),
+                                                                onTap: () async =>
+                                                                    appendHive(
+                                                                      setLocal,
+                                                                      hive,
+                                                                    ),
+                                                              );
+                                                            },
+                                                          ),
+                                                  ),
+                                                  Expanded(
+                                                    child: _PendingHiveList(
+                                                      hives: pending,
+                                                      emptyText:
+                                                          'Još nema izabranih košnica.',
+                                                      onRemove: (i) =>
+                                                          setLocal(
+                                                            () => pending
+                                                                .removeAt(i),
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
                                           ),
                                   ),
                                 ),
@@ -493,42 +548,33 @@ class _GroupScreenState extends State<GroupScreen> {
     );
   }
 
-  /// Vraća košnicu spremnu za grupu, ili null uz snackbar (osim ako [silent]).
-  Future<Hive?> _resolveHiveForGroup(String code, {bool silent = false}) async {
+  /// Vraća košnicu spremnu za grupu, ili [error] poruku ako se ne može dodati.
+  Future<({Hive? hive, String? error})> _resolveHiveForGroup(
+    String code,
+  ) async {
     final hive = await db.findHiveByBarcode(code);
     if (hive == null) {
-      if (!silent && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Nije u bazi: $code')));
-      }
-      return null;
+      return (hive: null, error: 'Nije u bazi: $code');
     }
     final statusBlock = HiveStatusRules.blockReasonAddToGroup(hive.status);
     if (statusBlock != null) {
-      if (!silent && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${hive.barcode}: $statusBlock')),
-        );
-      }
-      return null;
+      return (hive: null, error: '${hive.barcode}: $statusBlock');
     }
     final group = _group;
-    if (group == null) return null;
-    final existing = await db.activeMembershipInGroup(group.uuid, hive.uuid);
-    if (existing != null) {
-      if (!silent && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Košnica ${hive.barcode} je već aktivna u ovoj grupi.',
-            ),
-          ),
-        );
-      }
-      return null;
+    if (group == null) {
+      return (hive: null, error: 'Grupa nije učitana.');
     }
-    return hive;
+    final existing = await db.activeMembershipInGroupType(
+      widget.groupType,
+      hive.uuid,
+    );
+    if (existing != null) {
+      return (
+        hive: null,
+        error: 'Košnica ${hive.barcode} je već dodata u ovu grupu.',
+      );
+    }
+    return (hive: hive, error: null);
   }
 
   Future<_GroupAddDraft?> _collectGroupAddDetails({
@@ -650,7 +696,10 @@ class _GroupScreenState extends State<GroupScreen> {
     final group = _group;
     if (group == null) return false;
 
-    final already = await db.activeMembershipInGroup(group.uuid, hive.uuid);
+    final already = await db.activeMembershipInGroupType(
+      widget.groupType,
+      hive.uuid,
+    );
     if (already != null) return false;
 
     if (widget.groupType == 'MOVED') {
@@ -1479,45 +1528,100 @@ class _PendingHiveList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (hives.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            emptyText,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppTheme.muted(context)),
-          ),
+    final scheme = Theme.of(context).colorScheme;
+    final panelColor = AppTheme.tintedSurface(
+      context,
+      AppColors.mist,
+    );
+    final borderColor = scheme.outline.withValues(alpha: 0.28);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: panelColor,
+        border: Border(
+          top: BorderSide(color: borderColor),
         ),
-      );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      itemCount: hives.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, i) {
-        final hive = hives[i];
-        return ListTile(
-          dense: true,
-          leading: CircleAvatar(
-            radius: 14,
-            child: Text(
-              '${i + 1}',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.checklist_rtl,
+                  size: 18,
+                  color: AppTheme.muted(context),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  hives.isEmpty
+                      ? 'Izabrane košnice'
+                      : 'Izabrane košnice (${hives.length})',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppTheme.muted(context),
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
             ),
           ),
-          title: Text(
-            '${hive.barcode} · ${hive.hiveType}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
+          Expanded(
+            child: hives.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                      child: Text(
+                        emptyText,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppTheme.muted(context)),
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                    itemCount: hives.length,
+                    separatorBuilder: (_, _) => Divider(
+                      height: 1,
+                      color: borderColor,
+                    ),
+                    itemBuilder: (context, i) {
+                      final hive = hives[i];
+                      return ListTile(
+                        dense: true,
+                        leading: CircleAvatar(
+                          radius: 14,
+                          backgroundColor: AppColors.meadow.withValues(
+                            alpha: 0.15,
+                          ),
+                          foregroundColor: AppColors.meadow,
+                          child: Text(
+                            '${i + 1}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          '${hive.barcode} · ${hive.hiveType}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text('Košnica ${hive.orderNumber}'),
+                        trailing: IconButton(
+                          tooltip: 'Ukloni',
+                          icon: const Icon(Icons.close),
+                          onPressed: () => onRemove(i),
+                        ),
+                      );
+                    },
+                  ),
           ),
-          subtitle: Text('Košnica ${hive.orderNumber}'),
-          trailing: IconButton(
-            tooltip: 'Ukloni',
-            icon: const Icon(Icons.close),
-            onPressed: () => onRemove(i),
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

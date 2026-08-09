@@ -24,4 +24,16 @@ public class WorkGroup extends SyncEntity {
     public static WorkGroup findByUuid(String uuid) {
         return find("uuid", uuid).firstResult();
     }
+
+    /** Aktivna (nesbrisana) grupa datog tipa za korisnika — najviše jedna. */
+    public static WorkGroup findActiveByUserAndType(Long userId, String groupType) {
+        if (userId == null || groupType == null || groupType.isBlank()) {
+            return null;
+        }
+        return find(
+                "userId = ?1 and groupType = ?2 and dateDeleted is null",
+                userId,
+                groupType.trim()
+        ).firstResult();
+    }
 }

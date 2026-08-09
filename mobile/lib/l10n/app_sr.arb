@@ -34,6 +34,9 @@
   "createAccount": "Napravi nalog",
   "registerCheckEmailActivation": "Proverite email (inbox i spam) i kliknite aktivacioni link.",
   "continueOffline": "Nastavi offline (bez sync-a)",
+  "offlineDataWarning": "Radite bez prijave. Podaci sa ovog telefona mogu se izgubiti kada se prijavite.",
+  "offlineContinueConfirm": "Bez naloga podaci ostaju samo na ovom telefonu i mogu se izgubiti pri kasnijoj prijavi.\n\nNastaviti offline?",
+  "loginReplaceDataConfirm": "Lokalni podaci sa ovog telefona mogu se zameniti podacima sa naloga. Nastaviti sa prijavom?",
   "authDeviceNote": "Samo jedan telefon može biti prijavljen. Prijava sa novog uređaja odjavljuje stari.",
   "myApiaryHives": "Moj pčelinjak · ukupno {count} košnica",
   "@myApiaryHives": {
@@ -53,6 +56,7 @@
   "settings": "Konfiguracija",
   "exportBarcodes": "Izvezi barkodove",
   "logout": "Odjavi se",
+  "goToLogin": "Idi na prijavu",
   "addApiary": "Dodaj pčelinjak",
   "apiariesSection": "Pčelinjaci",
   "apiariesSectionHint": "Stalne lokacije i košnice",

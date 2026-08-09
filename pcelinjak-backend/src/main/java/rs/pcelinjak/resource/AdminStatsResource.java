@@ -45,6 +45,8 @@ public class AdminStatsResource {
         stats.put("remindersOpen", Reminder.count("dateDeleted is null and completed = false"));
         stats.put("workGroups", WorkGroup.count("dateDeleted is null"));
         stats.put("workGroupHives", WorkGroupHive.count("dateDeleted is null"));
+        stats.put("workGroupHivesActive", WorkGroupHive.count(
+                "dateDeleted is null and membershipStatus = ?1", "ACTIVE"));
         stats.put("feedback", Feedback.count());
         return stats;
     }

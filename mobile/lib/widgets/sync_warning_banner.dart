@@ -13,18 +13,32 @@ class SyncWarningBanner extends StatelessWidget {
     this.api,
     this.compact = false,
     this.message,
+    this.onTap,
+    this.actionLabel,
   });
 
   final int count;
   final ApiClient? api;
   final bool compact;
   final String? message;
+  final VoidCallback? onTap;
+  final String? actionLabel;
 
   @override
   Widget build(BuildContext context) {
     if (count <= 0) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
     final text = message ?? (count == 1 ? l10n.unsyncedOne : l10n.unsyncedMany(count));
+    final tap = onTap ??
+        (api == null
+            ? null
+            : () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => SyncScreen(api: api!)),
+                );
+              });
+    final trailing = actionLabel ?? (tap != null && api != null ? 'Sync' : null);
 
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bg = dark ? const Color(0xFF3D3420) : const Color(0xFFFFF3CD);
@@ -32,14 +46,7 @@ class SyncWarningBanner extends StatelessWidget {
     return Material(
       color: bg,
       child: InkWell(
-        onTap: api == null
-            ? null
-            : () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => SyncScreen(api: api!)),
-                );
-              },
+        onTap: tap,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: compact ? 8 : 12),
           child: Row(
@@ -56,9 +63,9 @@ class SyncWarningBanner extends StatelessWidget {
                   ),
                 ),
               ),
-              if (api != null)
+              if (trailing != null)
                 Text(
-                  'Sync',
+                  trailing,
                   style: TextStyle(
                     color: dark ? const Color(0xFF6FBF8F) : AppColors.meadowDark,
                     fontWeight: FontWeight.w800,

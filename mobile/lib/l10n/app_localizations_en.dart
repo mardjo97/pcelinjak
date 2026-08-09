@@ -112,6 +112,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueOffline => 'Continue offline (no sync)';
 
   @override
+  String get offlineDataWarning =>
+      'You are using the app without signing in. Data on this phone may be lost when you sign in.';
+
+  @override
+  String get offlineContinueConfirm =>
+      'Without an account, data stays only on this phone and may be lost when you later sign in.\n\nContinue offline?';
+
+  @override
+  String get loginReplaceDataConfirm =>
+      'Local data on this phone may be replaced by account data. Continue signing in?';
+
+  @override
   String get authDeviceNote =>
       'Only one phone can be signed in. Signing in on a new device signs out the old one.';
 
@@ -142,6 +154,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logout => 'Sign out';
+
+  @override
+  String get goToLogin => 'Go to sign in';
 
   @override
   String get addApiary => 'Add apiary';

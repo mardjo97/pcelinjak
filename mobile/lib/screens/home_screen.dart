@@ -4,6 +4,7 @@ import '../database/app_database.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/auto_sync_service.dart';
 import '../services/locale_service.dart';
 import '../services/notification_nav.dart';
 import '../services/push_device_service.dart';
@@ -34,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _unsynced = 0;
   final Map<String, int> _groupCounts = {};
   bool _loading = true;
+  bool _loggedIn = false;
 
   static const _groupsAccent = Color(0xFF6B46C1);
   static const _addAccent = Color(0xFF2B6CB0);
@@ -41,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    AutoSyncService.instance.addListener(_onSyncFinished);
     _reload();
     PushDeviceService(widget.api).start();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -48,15 +51,27 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    AutoSyncService.instance.removeListener(_onSyncFinished);
+    super.dispose();
+  }
+
+  void _onSyncFinished() {
+    if (mounted) _reload();
+  }
+
   Future<void> _reload() async {
     setState(() => _loading = true);
+    await db.dedupeWorkGroups();
     final apiaries = await db.listApiaries();
     final total = await db.hiveCount();
     final pending = await db.pendingReminders();
     final unsynced = await db.unsyncedCount();
+    final loggedIn = await widget.api.isLoggedIn();
     final counts = <String, int>{};
-    for (final g in await db.listWorkGroups()) {
-      counts[g.groupType] = await db.groupHiveCount(g.uuid);
+    for (final type in workGroupTypes.keys) {
+      counts[type] = await db.groupHiveCountByType(type);
     }
     if (!mounted) return;
     setState(() {
@@ -64,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _totalHives = total;
       _pendingReminders = pending.length;
       _unsynced = unsynced;
+      _loggedIn = loggedIn;
       _groupCounts
         ..clear()
         ..addAll(counts);
@@ -186,11 +202,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   ).textTheme.titleMedium?.copyWith(color: scheme.onSurface),
                 ),
               ),
-              SyncWarningBanner(
-                count: _unsynced,
-                api: widget.api,
-                compact: true,
-              ),
+              if (!_loggedIn)
+                SyncWarningBanner(
+                  count: 1,
+                  compact: true,
+                  message: l10n.offlineDataWarning,
+                  actionLabel: l10n.goToLogin,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SettingsScreen(api: widget.api),
+                      ),
+                    ).then((_) => _reload());
+                  },
+                )
+              else
+                SyncWarningBanner(
+                  count: _unsynced,
+                  api: widget.api,
+                  compact: true,
+                ),
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _reload,

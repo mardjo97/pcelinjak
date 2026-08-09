@@ -248,10 +248,8 @@ class AppDatabase {
       )
     ''');
 
-    for (final type in workGroupTypes.keys) {
-      final g = WorkGroup(uuid: _uuid.v4(), groupType: type);
-      await db.insert('work_group', g.toMap());
-    }
+    // Grupe se kreiraju po potrebi (GroupScreen) — ne seedujemo prazne UUID-ove
+    // jer bi se push-ovale na server i pravile duplikate po tipu.
   }
 
   String newUuid() => _uuid.v4();
@@ -687,14 +685,27 @@ class AppDatabase {
   }
 
   Future<WorkGroup?> workGroupByType(String type) async {
-    final rows = await (await db).query(
-      'work_group',
-      where: 'groupType = ? AND dateDeleted IS NULL AND finished = 0',
-      whereArgs: [type],
-      limit: 1,
+    final database = await db;
+    // Preferiraj grupu koja ima aktivne košnice (izbegni prazan duplikat).
+    final ranked = await database.rawQuery(
+      '''
+      SELECT wg.*,
+             (SELECT COUNT(*) FROM work_group_hive wgh
+              WHERE wgh.groupUuid = wg.uuid
+                AND wgh.dateDeleted IS NULL
+                AND (wgh.membershipStatus = 'ACTIVE'
+                     OR (wgh.membershipStatus IS NULL AND wgh.done = 0))
+             ) AS activeCount
+      FROM work_group wg
+      WHERE wg.groupType = ? AND wg.dateDeleted IS NULL AND wg.finished = 0
+      ORDER BY activeCount DESC, wg.dateCreated ASC
+      LIMIT 1
+      ''',
+      [type],
     );
-    if (rows.isEmpty) return null;
-    return WorkGroup.fromMap(rows.first);
+    if (ranked.isEmpty) return null;
+    final row = Map<String, dynamic>.from(ranked.first)..remove('activeCount');
+    return WorkGroup.fromMap(row);
   }
 
   Future<List<WorkGroup>> listWorkGroups() async {
@@ -703,6 +714,51 @@ class AppDatabase {
       where: 'dateDeleted IS NULL',
     );
     return rows.map(WorkGroup.fromMap).toList();
+  }
+
+  /// Broj aktivnih košnica za tip grupe (sabira sve UUID-ove istog tipa).
+  Future<int> groupHiveCountByType(String groupType) async {
+    final r = await (await db).rawQuery(
+      '''
+      SELECT COUNT(*) as c
+      FROM work_group_hive wgh
+      INNER JOIN work_group wg ON wg.uuid = wgh.groupUuid
+      WHERE wg.groupType = ?
+        AND wgh.dateDeleted IS NULL
+        AND (wgh.membershipStatus = 'ACTIVE'
+             OR (wgh.membershipStatus IS NULL AND wgh.done = 0))
+      ''',
+      [groupType],
+    );
+    return r.first['c'] as int;
+  }
+
+  Future<List<WorkGroupHive>> groupHivesByType(
+    String groupType, {
+    String? filter,
+  }) async {
+    final statusClause = (filter == null || filter == 'ACTIVE')
+        ? "AND (wgh.membershipStatus = 'ACTIVE' OR (wgh.membershipStatus IS NULL AND wgh.done = 0))"
+        : filter == 'ALL'
+        ? ''
+        : 'AND wgh.membershipStatus = ?';
+    final args = <Object?>[groupType];
+    if (filter != null && filter != 'ACTIVE' && filter != 'ALL') {
+      args.add(filter);
+    }
+    final rows = await (await db).rawQuery(
+      '''
+      SELECT wgh.*
+      FROM work_group_hive wgh
+      INNER JOIN work_group wg ON wg.uuid = wgh.groupUuid
+      WHERE wg.groupType = ?
+        AND wgh.dateDeleted IS NULL
+        $statusClause
+      ORDER BY wgh.dateCreated DESC
+      ''',
+      args,
+    );
+    return rows.map(WorkGroupHive.fromMap).toList();
   }
 
   Future<void> upsertWorkGroup(WorkGroup g) async {
@@ -754,6 +810,182 @@ class AppDatabase {
       [groupUuid],
     );
     return r.first['c'] as int;
+  }
+
+  /// Spaja duplikate grupa istog tipa i vraća članstva sa soft-obrisanih grupa.
+  Future<void> dedupeWorkGroups() async {
+    final database = await db;
+    final now = DateTime.now().toUtc().toIso8601String();
+    var changed = false;
+
+    for (final type in workGroupTypes.keys) {
+      final active = await database.query(
+        'work_group',
+        where: 'groupType = ? AND dateDeleted IS NULL AND finished = 0',
+        whereArgs: [type],
+        orderBy: 'dateCreated ASC',
+      );
+
+      // Izaberi / napravi kanonsku aktivnu grupu.
+      String? canonicalUuid;
+      if (active.isNotEmpty) {
+        var bestCount = -1;
+        for (final g in active) {
+          final uuid = g['uuid'] as String;
+          final count = await groupHiveCount(uuid);
+          if (count > bestCount) {
+            bestCount = count;
+            canonicalUuid = uuid;
+          }
+        }
+      }
+
+      // Članstva sa soft-obrisanih grupa istog tipa → na kanonsku.
+      final deletedWithType = await database.rawQuery(
+        '''
+        SELECT DISTINCT wg.uuid
+        FROM work_group wg
+        INNER JOIN work_group_hive wgh ON wgh.groupUuid = wg.uuid
+        WHERE wg.groupType = ?
+          AND wg.dateDeleted IS NOT NULL
+          AND wgh.dateDeleted IS NULL
+        ''',
+        [type],
+      );
+
+      if (canonicalUuid == null &&
+          (active.isNotEmpty || deletedWithType.isNotEmpty)) {
+        if (active.isNotEmpty) {
+          canonicalUuid = active.first['uuid'] as String;
+        } else {
+          // Oživi najstariju obrisanu koja ima članstva.
+          final revive = await database.rawQuery(
+            '''
+            SELECT wg.uuid
+            FROM work_group wg
+            WHERE wg.groupType = ? AND wg.dateDeleted IS NOT NULL
+            ORDER BY wg.dateCreated ASC
+            LIMIT 1
+            ''',
+            [type],
+          );
+          if (revive.isNotEmpty) {
+            canonicalUuid = revive.first['uuid'] as String;
+            await database.update(
+              'work_group',
+              {
+                'dateDeleted': null,
+                'dateModified': now,
+                'dateSynched': null,
+                'finished': 0,
+              },
+              where: 'uuid = ?',
+              whereArgs: [canonicalUuid],
+            );
+            changed = true;
+          }
+        }
+      }
+
+      if (canonicalUuid == null) continue;
+
+      for (final g in active) {
+        final uuid = g['uuid'] as String;
+        if (uuid == canonicalUuid) continue;
+        await database.update(
+          'work_group_hive',
+          {
+            'groupUuid': canonicalUuid,
+            'dateModified': now,
+            'dateSynched': null,
+          },
+          where: 'groupUuid = ? AND dateDeleted IS NULL',
+          whereArgs: [uuid],
+        );
+        await database.update(
+          'work_group',
+          {
+            'dateDeleted': now,
+            'dateModified': now,
+            'dateSynched': null,
+          },
+          where: 'uuid = ?',
+          whereArgs: [uuid],
+        );
+        changed = true;
+      }
+
+      for (final row in deletedWithType) {
+        final uuid = row['uuid'] as String;
+        if (uuid == canonicalUuid) continue;
+        final moved = await database.update(
+          'work_group_hive',
+          {
+            'groupUuid': canonicalUuid,
+            'dateModified': now,
+            'dateSynched': null,
+          },
+          where: 'groupUuid = ? AND dateDeleted IS NULL',
+          whereArgs: [uuid],
+        );
+        if (moved > 0) changed = true;
+      }
+    }
+
+    if (changed) _notifyLocalChange();
+  }
+
+  Future<void> remapWorkGroupUuid(String fromUuid, String toUuid) async {
+    if (fromUuid == toUuid) return;
+    final database = await db;
+    final now = DateTime.now().toUtc().toIso8601String();
+    await database.update(
+      'work_group_hive',
+      {
+        'groupUuid': toUuid,
+        'dateModified': now,
+        'dateSynched': null,
+      },
+      where: 'groupUuid = ? AND dateDeleted IS NULL',
+      whereArgs: [fromUuid],
+    );
+  }
+
+  Future<void> softDeleteWorkGroup(String uuid) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    await (await db).update(
+      'work_group',
+      {
+        'dateDeleted': now,
+        'dateModified': now,
+        'dateSynched': null,
+      },
+      where: 'uuid = ? AND dateDeleted IS NULL',
+      whereArgs: [uuid],
+    );
+  }
+
+  /// Aktivno članstvo košnice u grupi datog tipa (bilo koji UUID tog tipa).
+  Future<WorkGroupHive?> activeMembershipInGroupType(
+    String groupType,
+    String hiveUuid,
+  ) async {
+    final rows = await (await db).rawQuery(
+      '''
+      SELECT wgh.*
+      FROM work_group_hive wgh
+      INNER JOIN work_group wg ON wg.uuid = wgh.groupUuid
+      WHERE wg.groupType = ?
+        AND wgh.hiveUuid = ?
+        AND wgh.dateDeleted IS NULL
+        AND (wgh.membershipStatus = 'ACTIVE'
+             OR (wgh.membershipStatus IS NULL AND wgh.done = 0))
+      LIMIT 1
+      ''',
+      [groupType, hiveUuid],
+    );
+    if (rows.isEmpty) return null;
+    return WorkGroupHive.fromMap(rows.first);
   }
 
   /// Aktivno članstvo košnice u grupi (ako postoji).

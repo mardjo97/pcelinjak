@@ -113,6 +113,18 @@ class AppLocalizationsHr extends AppLocalizations {
   String get continueOffline => 'Nastavi offline (bez sinkronizacije)';
 
   @override
+  String get offlineDataWarning =>
+      'Radite bez prijave. Podaci s ovog telefona mogu se izgubiti kada se prijavite.';
+
+  @override
+  String get offlineContinueConfirm =>
+      'Bez računa podaci ostaju samo na ovom telefonu i mogu se izgubiti pri kasnijoj prijavi.\n\nNastaviti offline?';
+
+  @override
+  String get loginReplaceDataConfirm =>
+      'Lokalni podaci s ovog telefona mogu se zamijeniti podacima s računa. Nastaviti s prijavom?';
+
+  @override
   String get authDeviceNote =>
       'Samo jedan telefon može biti prijavljen. Prijava s novog uređaja odjavljuje stari.';
 
@@ -143,6 +155,9 @@ class AppLocalizationsHr extends AppLocalizations {
 
   @override
   String get logout => 'Odjavi se';
+
+  @override
+  String get goToLogin => 'Idi na prijavu';
 
   @override
   String get addApiary => 'Dodaj pčelinjak';

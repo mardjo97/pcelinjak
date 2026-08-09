@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../database/app_database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/api_client.dart';
 import '../services/auth_sync.dart';
@@ -39,6 +40,32 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
+    if (!_register) {
+      final hiveCount = await AppDatabase.instance.hiveCount();
+      final apiaries = await AppDatabase.instance.listApiaries();
+      final hasLocal = hiveCount > 0 || apiaries.isNotEmpty;
+      if (!mounted) return;
+      if (hasLocal) {
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(l10n.signIn),
+            content: Text(l10n.loginReplaceDataConfirm),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(l10n.signIn),
+              ),
+            ],
+          ),
+        );
+        if (ok != true || !mounted) return;
+      }
+    }
     setState(() => _loading = true);
     try {
       final auth = AuthService(widget.api);
@@ -58,6 +85,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
       await auth.login(email: _email.text.trim(), password: _password.text);
       await AutoSyncService.instance.start();
+      await AutoSyncService.instance.syncNow();
       await PushDeviceService(widget.api).start();
       if (!mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomeScreen(api: widget.api)));
@@ -70,6 +98,25 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _offline() async {
+    final l10n = AppLocalizations.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.continueOffline),
+        content: Text(l10n.offlineContinueConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.continueOffline),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomeScreen(api: widget.api)));
   }
 
@@ -135,6 +182,18 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Text(_register ? l10n.haveAccount : l10n.createAccount),
               ),
               TextButton(onPressed: _offline, child: Text(l10n.continueOffline)),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  l10n.offlineDataWarning,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.isDark(context)
+                        ? const Color(0xFFF3E2A8)
+                        : Colors.orange.shade900,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
               TextButton(
                 onPressed: () {
                   Navigator.push(

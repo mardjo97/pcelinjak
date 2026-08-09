@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- 1) Prvo dedupe — unique ne sme pasti na postojećim duplikatima -->
+    <changeSet id="20260809-01-dedupe-work-groups" author="dmarkovic" dbms="mysql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="work_group"/>
+            <tableExists tableName="work_group_hive"/>
+        </preConditions>
+        <comment>Merge duplicate active work_group rows per (user_id, group_type)</comment>
+        <sqlFile
+                path="db/changelog/changes/20260809-dedupe-work-groups.sql"
+                splitStatements="true"
+                stripComments="true"
+                endDelimiter=";"/>
+    </changeSet>
+
+    <!-- 2) Zatim unique među aktivnim grupama (generated key; soft-delete → NULL) -->
+    <changeSet id="20260809-02-work-group-active-type-key" author="dmarkovic" dbms="mysql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="work_group"/>
+            <not>
+                <columnExists tableName="work_group" columnName="active_type_key"/>
+            </not>
+        </preConditions>
+        <comment>Generated column for unique active group type per user</comment>
+        <sql>
+            ALTER TABLE work_group
+              ADD COLUMN active_type_key VARCHAR(40)
+              AS (IF(date_deleted IS NULL, group_type, NULL)) STORED;
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260809-03-work-group-unique-active-type" author="dmarkovic" dbms="mysql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="work_group"/>
+            <columnExists tableName="work_group" columnName="active_type_key"/>
+            <not>
+                <indexExists tableName="work_group" indexName="uk_work_group_user_active_type"/>
+            </not>
+        </preConditions>
+        <comment>UNIQUE (user_id, active_type_key) — at most one active group per type per user</comment>
+        <sql>
+            ALTER TABLE work_group
+              ADD UNIQUE KEY uk_work_group_user_active_type (user_id, active_type_key);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
