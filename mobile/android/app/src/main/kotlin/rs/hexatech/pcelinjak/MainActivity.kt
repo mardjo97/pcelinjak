@@ -1,4 +1,4 @@
-package rs.hexatech.pcelinjak_mobile
+package rs.hexatech.pcelinjak
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -29,9 +29,13 @@ class AppTheme {
   static Color muted(BuildContext context) =>
       Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62);
 
-  /// Soft tinted panel (notes, queen, harvests…) — uses card color in dark mode.
-  static Color tintedSurface(BuildContext context, Color lightTint) =>
-      isDark(context) ? card(context) : lightTint;
+  /// Soft tinted panel (notes, queen, harvests…).
+  /// In dark mode blends [lightTint] onto the card so blocks stay visually distinct.
+  static Color tintedSurface(BuildContext context, Color lightTint) {
+    if (!isDark(context)) return lightTint;
+    final base = card(context);
+    return Color.alphaBlend(lightTint.withValues(alpha: 0.22), base);
+  }
 
   static Color chipLabel(BuildContext context, {required bool selected, required Color accent}) {
     if (selected) return Colors.white;

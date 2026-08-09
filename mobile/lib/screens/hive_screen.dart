@@ -643,7 +643,7 @@ class _HiveScreenState extends State<HiveScreen> {
         : Colors.black87;
 
     return Scaffold(
-      backgroundColor: AppTheme.tintedSurface(context, AppColors.mist),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(title),
         actions: [
@@ -1043,12 +1043,21 @@ class _HiveBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = AppTheme.isDark(context);
     final bg = AppTheme.tintedSurface(context, color);
     return Material(
       color: bg,
-      elevation: 1,
+      elevation: dark ? 0 : 1,
       shadowColor: Colors.black26,
-      borderRadius: BorderRadius.circular(18),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: dark
+            ? BorderSide(
+                color: accent.withValues(alpha: 0.45),
+                width: 1.2,
+              )
+            : BorderSide.none,
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
         child: Column(
