@@ -136,7 +136,6 @@ CREATE TABLE inspection (
     brood_status VARCHAR(32) NOT NULL,
     food_status VARCHAR(32) NOT NULL,
     temper_status VARCHAR(32) NOT NULL,
-    health_status VARCHAR(32) NOT NULL,
     strength_status VARCHAR(32) NOT NULL,
     follow_up_at DATETIME(6) NULL,
     source_type VARCHAR(32) NULL,
