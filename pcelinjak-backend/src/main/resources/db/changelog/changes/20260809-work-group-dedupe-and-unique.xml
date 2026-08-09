@@ -13,7 +13,8 @@
         </preConditions>
         <comment>Merge duplicate active work_group rows per (user_id, group_type)</comment>
         <sqlFile
-                path="db/changelog/changes/20260809-dedupe-work-groups.sql"
+                path="20260809-dedupe-work-groups.sql"
+                relativeToChangelogFile="true"
                 splitStatements="true"
                 stripComments="true"
                 endDelimiter=";"/>

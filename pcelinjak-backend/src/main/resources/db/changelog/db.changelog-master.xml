@@ -5,8 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <include file="db/changelog/changes/20260809-00-initial-schema.xml"/>
-    <!-- For DBs created before Liquibase: dedupe then add unique (no-op if already in baseline) -->
-    <include file="db/changelog/changes/20260809-work-group-dedupe-and-unique.xml"/>
+    <include file="changes/20260809-00-initial-schema.xml" relativeToChangelogFile="true"/>
+    <include file="changes/20260809-work-group-dedupe-and-unique.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

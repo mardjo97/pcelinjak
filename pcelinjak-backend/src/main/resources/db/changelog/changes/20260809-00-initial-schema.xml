@@ -13,7 +13,8 @@
         </preConditions>
         <comment>Baseline schema from JPA entities (empty DB / after drop)</comment>
         <sqlFile
-                path="db/changelog/changes/20260809-00-initial-schema.sql"
+                path="20260809-00-initial-schema.sql"
+                relativeToChangelogFile="true"
                 splitStatements="true"
                 stripComments="true"
                 endDelimiter=";"/>
