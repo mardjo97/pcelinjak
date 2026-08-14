@@ -10,6 +10,7 @@ import '../utils/system_insets.dart';
 import '../widgets/form_spaced_column.dart';
 import '../widgets/home_fab.dart';
 import '../widgets/password_field.dart';
+import '../widgets/busy.dart';
 import 'auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -156,6 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
     try {
+      setState(() => _saving = true);
       await AuthService(widget.api).deleteAccount(password: password);
       AutoSyncService.instance.stop();
       if (!mounted) return;
@@ -170,6 +172,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -180,6 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => _ChangePasswordDialog(l10n: l10n),
     );
     if (result == null || !mounted) return;
+    setState(() => _saving = true);
     try {
       await AuthService(widget.api).changePassword(
         currentPassword: result.$1,
@@ -193,6 +198,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -213,7 +220,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(title: Text(l10n.profile)),
       floatingActionButton: const HomeFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      body: _loading
+      body: BusyOverlay(
+        busy: _saving,
+        message: l10n.waiting,
+        child: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: EdgeInsets.fromLTRB(20, 16, 20, settingsScrollBottom(context)),
@@ -254,12 +264,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 20),
                 FilledButton(
                   onPressed: _saving ? null : _save,
-                  child: Text(_saving ? l10n.saving : l10n.save),
+                  child: BusyButtonChild(
+                    busy: _saving,
+                    label: l10n.save,
+                    busyLabel: l10n.saving,
+                  ),
                 ),
                 if (_loggedIn) ...[
                   _sectionTitle(l10n.settingsDanger),
                   OutlinedButton.icon(
-                    onPressed: _changePassword,
+                    onPressed: _saving ? null : _changePassword,
                     icon: const Icon(Icons.lock_reset),
                     label: Text(l10n.changePassword),
                     style: OutlinedButton.styleFrom(
@@ -268,7 +282,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: _deleteAccount,
+                    onPressed: _saving ? null : _deleteAccount,
                     icon: Icon(Icons.delete_forever, color: Colors.red.shade700),
                     label: Text(l10n.deleteAccount, style: TextStyle(color: Colors.red.shade700)),
                     style: OutlinedButton.styleFrom(
@@ -280,6 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ],
             ),
+      ),
     );
   }
 }

@@ -18,8 +18,17 @@ class AutoSyncService with WidgetsBindingObserver, ChangeNotifier {
   Timer? _debounce;
   bool _started = false;
   bool _running = false;
+  bool _fullRunning = false;
+  bool _showBanner = false;
   bool _pendingAfterRun = false;
   bool _wantFull = false;
+  bool _wantBanner = false;
+
+  /// True while a full pull/push cycle is in progress.
+  bool get isFullSyncing => _fullRunning;
+
+  /// Banner only for explicit full sync (login / Sync screen), not connectivity or resume.
+  bool get showSyncBanner => _showBanner;
 
   void attach(ApiClient api) {
     _api = api;
@@ -61,7 +70,7 @@ class AutoSyncService with WidgetsBindingObserver, ChangeNotifier {
     });
   }
 
-  /// Povratak mreže / app resume — push + pull.
+  /// Povratak mreže / app resume — push + pull, without the home banner.
   void scheduleFullSync() {
     _wantFull = true;
     _debounce?.cancel();
@@ -70,10 +79,11 @@ class AutoSyncService with WidgetsBindingObserver, ChangeNotifier {
     });
   }
 
-  /// Odmah uradi full sync (npr. posle logina).
+  /// Odmah uradi full sync (npr. posle logina) i prikaži baner.
   Future<void> syncNow() async {
     _debounce?.cancel();
     _wantFull = true;
+    _wantBanner = true;
     await _run();
   }
 
@@ -90,8 +100,13 @@ class AutoSyncService with WidgetsBindingObserver, ChangeNotifier {
     if (!_hasNetwork(results)) return;
 
     final doFull = _wantFull;
+    final showBanner = doFull && _wantBanner;
     _wantFull = false;
+    _wantBanner = false;
     _running = true;
+    _fullRunning = doFull;
+    _showBanner = showBanner;
+    if (doFull) notifyListeners();
     try {
       final sync = SyncService(api, AppDatabase.instance);
       if (doFull) {
@@ -103,6 +118,8 @@ class AutoSyncService with WidgetsBindingObserver, ChangeNotifier {
       // Nema veze ili greška servera — ostaje lokalno.
     } finally {
       _running = false;
+      _fullRunning = false;
+      _showBanner = false;
       if (doFull) {
         notifyListeners();
       }

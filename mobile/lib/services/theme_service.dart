@@ -20,7 +20,7 @@ class ThemeController extends ChangeNotifier {
   /// system | light | dark
   String _preference = 'system';
   double _textScaleFactor = textScaleNormal;
-  bool _autorotation = true;
+  bool _autorotation = false;
 
   String get preference => _preference;
   double get textScaleFactor => _textScaleFactor;
@@ -41,7 +41,7 @@ class ThemeController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _preference = prefs.getString(_prefsKey) ?? 'system';
     _textScaleFactor = prefs.getDouble(_textScaleKey) ?? textScaleNormal;
-    _autorotation = prefs.getBool(_autorotationKey) ?? true;
+    _autorotation = prefs.getBool(_autorotationKey) ?? false;
     _applyOrientation();
     notifyListeners();
   }

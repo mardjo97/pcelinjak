@@ -5,6 +5,7 @@ import '../services/api_client.dart';
 import '../services/locale_service.dart';
 import '../widgets/form_spaced_column.dart';
 import '../widgets/home_fab.dart';
+import '../widgets/busy.dart';
 import '../utils/system_insets.dart';
 
 class FeedbackScreen extends StatefulWidget {
@@ -76,7 +77,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       appBar: AppBar(title: Text(l10n.feedback)),
       floatingActionButton: const HomeFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      body: ListView(
+      body: BusyOverlay(
+        busy: _sending,
+        message: l10n.sending,
+        child: ListView(
         padding: EdgeInsets.fromLTRB(20, 16, 20, settingsScrollBottom(context)),
         children: [
           Text(l10n.feedbackIntro, style: Theme.of(context).textTheme.bodyMedium),
@@ -103,9 +107,14 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           const SizedBox(height: 24),
           FilledButton(
             onPressed: _sending ? null : _send,
-            child: Text(_sending ? l10n.sending : l10n.sendFeedback),
+            child: BusyButtonChild(
+              busy: _sending,
+              label: l10n.sendFeedback,
+              busyLabel: l10n.sending,
+            ),
           ),
         ],
+      ),
       ),
     );
   }

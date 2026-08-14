@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final Map<String, int> _groupCounts = {};
   bool _loading = true;
   bool _loggedIn = false;
+  bool _initialLoad = true;
 
   static const _groupsAccent = Color(0xFF6B46C1);
   static const _addAccent = Color(0xFF2B6CB0);
@@ -44,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    AutoSyncService.instance.addListener(_onSyncFinished);
+    AutoSyncService.instance.addListener(_onSyncChanged);
     _reload();
     PushDeviceService(widget.api).start();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -54,16 +55,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    AutoSyncService.instance.removeListener(_onSyncFinished);
+    AutoSyncService.instance.removeListener(_onSyncChanged);
     super.dispose();
   }
 
-  void _onSyncFinished() {
-    if (mounted) _reload();
+  void _onSyncChanged() {
+    if (!mounted) return;
+    setState(() {});
+    if (!AutoSyncService.instance.isFullSyncing) {
+      _reload();
+    }
   }
 
   Future<void> _reload() async {
-    setState(() => _loading = true);
+    if (_initialLoad && mounted) setState(() => _loading = true);
     await db.dedupeWorkGroups();
     final apiaries = await db.listApiaries();
     final total = await db.hiveCount();
@@ -85,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ..clear()
         ..addAll(counts);
       _loading = false;
+      _initialLoad = false;
     });
   }
 
@@ -224,6 +230,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   api: widget.api,
                   compact: true,
                 ),
+              if (AutoSyncService.instance.showSyncBanner)
+                const _SyncingBanner(),
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _reload,
@@ -517,6 +525,54 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SyncingBanner extends StatelessWidget {
+  const _SyncingBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final fg = dark ? const Color(0xFF6FBF8F) : AppColors.meadowDark;
+    final bg = dark ? const Color(0xFF1E3328) : const Color(0xFFE8F5E9);
+    return Material(
+      color: bg,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LinearProgressIndicator(
+            minHeight: 2,
+            color: fg,
+            backgroundColor: bg,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2.4, color: fg),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.syncing,
+                    style: TextStyle(
+                      color: fg,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../services/api_client.dart';
 import '../services/auth_sync.dart';
 import '../widgets/home_fab.dart';
 import '../widgets/sync_warning_banner.dart';
+import '../widgets/busy.dart';
 import 'auth_screen.dart';
 
 class SyncScreen extends StatefulWidget {
@@ -78,7 +79,10 @@ class _SyncScreenState extends State<SyncScreen> {
       appBar: AppBar(title: Text(l10n.syncTitle)),
       floatingActionButton: const HomeFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      body: Column(
+      body: BusyOverlay(
+        busy: _loading,
+        message: l10n.syncing,
+        child: Column(
         children: [
           SyncWarningBanner(
             count: _unsynced,
@@ -101,7 +105,11 @@ class _SyncScreenState extends State<SyncScreen> {
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: _loading ? null : _sync,
-                    child: Text(_loading ? l10n.syncing : l10n.sendToServer),
+                    child: BusyButtonChild(
+                      busy: _loading,
+                      label: l10n.sendToServer,
+                      busyLabel: l10n.syncing,
+                    ),
                   ),
                   if (_message != null) ...[
                     const SizedBox(height: 16),
@@ -112,6 +120,7 @@ class _SyncScreenState extends State<SyncScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
