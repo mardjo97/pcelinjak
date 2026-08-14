@@ -449,7 +449,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsIntro.
   ///
   /// In sr, this message translates to:
-  /// **'Podaci pčelara za zvanične obrasce (Prilog 4). ID broj pčelinjaka unosi se na svakom pčelinjaku.'**
+  /// **'Tema, jezik i ostala podešavanja aplikacije.'**
   String get settingsIntro;
 
   /// No description provided for @beekeeperName.
@@ -533,7 +533,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportsIntro.
   ///
   /// In sr, this message translates to:
-  /// **'Izaberite izveštaj, zatim format: PDF, Word (DOCX) ili CSV. Podaci pčelara (HID, ime) i ID pčelinjaka uzimaju se iz konfiguracije.'**
+  /// **'Izaberite izveštaj, zatim format: PDF, Word (DOCX) ili CSV. Podaci pčelara (HID, ime) i ID pčelinjaka uzimaju se iz profila.'**
   String get reportsIntro;
 
   /// No description provided for @exportFormat.
@@ -1013,7 +1013,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyBody.
   ///
   /// In sr, this message translates to:
-  /// **'Aplikacija Pčelinjak prikuplja podatke neophodne za evidenciju pčelinjaka i sinhronizaciju sa serverom.\n\n1. Podaci o nalogu\nČuvamo email, ime, telefon (opciono) i heš lozinke. Jedan uređaj može biti aktivan po nalogu.\n\n2. Podaci o pčelinjaku\nKošnice, matici, napomene, prinosi, grupe rada i podsetnici čuvaju se lokalno na uređaju i, kada koristite sync, na našem serveru vezano za vaš nalog.\n\n3. Feedback\nAko pošaljete povratnu informaciju, poruka i email se čuvaju radi unapređenja aplikacije.\n\n4. Deljenje\nNe prodajemo lične podatke trećim stranama. Podaci se koriste isključivo za funkcionisanje aplikacije.\n\n5. Brisanje\nMožete obrisati nalog u Podešavanjima uz potvrdu lozinke. Time se brišu podaci na serveru i lokalno na uređaju.\n\n6. Kontakt\nZa pitanja o privatnosti koristite Feedback u aplikaciji.'**
+  /// **'Aplikacija Pčelinjak prikuplja podatke neophodne za evidenciju pčelinjaka i sinhronizaciju sa serverom.\n\n1. Podaci o nalogu\nČuvamo email, ime, prezime, telefon (opciono) i heš lozinke. Jedan uređaj može biti aktivan po nalogu.\n\n2. Podaci o pčelinjaku\nKošnice, matici, napomene, prinosi, grupe rada i podsetnici čuvaju se lokalno na uređaju i, kada koristite sync, na našem serveru vezano za vaš nalog.\n\n3. Feedback\nAko pošaljete povratnu informaciju, poruka i email se čuvaju radi unapređenja aplikacije.\n\n4. Deljenje\nNe prodajemo lične podatke trećim stranama. Podaci se koriste isključivo za funkcionisanje aplikacije.\n\n5. Brisanje\nMožete obrisati nalog u Profilu uz potvrdu lozinke. Time se brišu podaci na serveru i lokalno na uređaju.\n\n6. Kontakt\nZa pitanja o privatnosti koristite Feedback u aplikaciji.'**
   String get privacyBody;
 
   /// No description provided for @feedback.
@@ -1081,6 +1081,144 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Nalog je obrisan.'**
   String get accountDeleted;
+
+  /// No description provided for @profile.
+  ///
+  /// In sr, this message translates to:
+  /// **'Profil'**
+  String get profile;
+
+  /// No description provided for @profileIntro.
+  ///
+  /// In sr, this message translates to:
+  /// **'Lični podaci za nalog i zvanične obrasce (Prilog 4). ID broj pčelinjaka unosi se na svakom pčelinjaku.'**
+  String get profileIntro;
+
+  /// No description provided for @profileAccount.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nalog'**
+  String get profileAccount;
+
+  /// No description provided for @firstName.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ime'**
+  String get firstName;
+
+  /// No description provided for @lastName.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prezime'**
+  String get lastName;
+
+  /// No description provided for @nameRequired.
+  ///
+  /// In sr, this message translates to:
+  /// **'Unesite ime i prezime.'**
+  String get nameRequired;
+
+  /// No description provided for @invalidPhone.
+  ///
+  /// In sr, this message translates to:
+  /// **'Neispravan broj telefona.'**
+  String get invalidPhone;
+
+  /// No description provided for @profileSaved.
+  ///
+  /// In sr, this message translates to:
+  /// **'Profil je sačuvan.'**
+  String get profileSaved;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In sr, this message translates to:
+  /// **'Promeni lozinku'**
+  String get changePassword;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In sr, this message translates to:
+  /// **'Trenutna lozinka'**
+  String get currentPassword;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nova lozinka'**
+  String get newPassword;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In sr, this message translates to:
+  /// **'Potvrdi lozinku'**
+  String get confirmPassword;
+
+  /// No description provided for @passwordMismatch.
+  ///
+  /// In sr, this message translates to:
+  /// **'Lozinke se ne poklapaju.'**
+  String get passwordMismatch;
+
+  /// No description provided for @passwordTooShort.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nova lozinka mora imati najmanje 8 karaktera.'**
+  String get passwordTooShort;
+
+  /// No description provided for @passwordChanged.
+  ///
+  /// In sr, this message translates to:
+  /// **'Lozinka je promenjena.'**
+  String get passwordChanged;
+
+  /// No description provided for @settingsTextSize.
+  ///
+  /// In sr, this message translates to:
+  /// **'Veličina slova'**
+  String get settingsTextSize;
+
+  /// No description provided for @settingsTextSmall.
+  ///
+  /// In sr, this message translates to:
+  /// **'Mala'**
+  String get settingsTextSmall;
+
+  /// No description provided for @settingsTextNormal.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obična'**
+  String get settingsTextNormal;
+
+  /// No description provided for @settingsTextLarge.
+  ///
+  /// In sr, this message translates to:
+  /// **'Velika'**
+  String get settingsTextLarge;
+
+  /// No description provided for @settingsTextVeryLarge.
+  ///
+  /// In sr, this message translates to:
+  /// **'Veća'**
+  String get settingsTextVeryLarge;
+
+  /// No description provided for @settingsAutorotation.
+  ///
+  /// In sr, this message translates to:
+  /// **'Autorotacija'**
+  String get settingsAutorotation;
+
+  /// No description provided for @settingsAutorotationSubtitle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dozvoli pejzažni prikaz'**
+  String get settingsAutorotationSubtitle;
+
+  /// No description provided for @openProfile.
+  ///
+  /// In sr, this message translates to:
+  /// **'Otvori profil'**
+  String get openProfile;
 }
 
 class _AppLocalizationsDelegate

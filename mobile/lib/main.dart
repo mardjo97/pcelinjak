@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
@@ -18,12 +19,23 @@ import 'widgets/keyboard_dismiss.dart';
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await LocaleController.instance.load();
   await ThemeController.instance.load();
   await ReminderService.instance.init();
   await PushDeviceService.initFirebase();
   final api = ApiClient();
   AutoSyncService.instance.attach(api);
+  api.onUnauthorized = () async {
+    AutoSyncService.instance.stop();
+    await api.clearSession();
+    final nav = NotificationNav.navigatorKey.currentState;
+    if (nav == null) return;
+    nav.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => AuthScreen(api: api)),
+      (_) => false,
+    );
+  };
   final loggedIn = await api.isLoggedIn();
   if (loggedIn) {
     await AutoSyncService.instance.start();
@@ -64,7 +76,12 @@ class PcelinjakApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           builder: (context, child) => KeyboardDismissScope(
-            child: child ?? const SizedBox.shrink(),
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(ThemeController.instance.textScaleFactor),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
           home: startHome ? HomeScreen(api: api) : AuthScreen(api: api),
         );

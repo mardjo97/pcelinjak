@@ -6,6 +6,8 @@ public class AuthDto {
         public String email;
         public String password;
         public String name;
+        public String firstName;
+        public String lastName;
         public String phone;
         public String deviceUuid;
     }
@@ -21,7 +23,20 @@ public class AuthDto {
         public Long userId;
         public String email;
         public String name;
+        public String firstName;
+        public String lastName;
         public String phone;
+    }
+
+    public static class UpdateProfileRequest {
+        public String firstName;
+        public String lastName;
+        public String phone;
+    }
+
+    public static class ChangePasswordRequest {
+        public String currentPassword;
+        public String newPassword;
     }
 
     public static class MessageResponse {

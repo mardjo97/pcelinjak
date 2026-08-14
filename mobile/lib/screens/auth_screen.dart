@@ -24,7 +24,8 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
-  final _name = TextEditingController();
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
   final _phone = TextEditingController();
   bool _register = false;
   bool _loading = false;
@@ -33,7 +34,8 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _email.dispose();
     _password.dispose();
-    _name.dispose();
+    _firstName.dispose();
+    _lastName.dispose();
     _phone.dispose();
     super.dispose();
   }
@@ -73,7 +75,8 @@ class _AuthScreenState extends State<AuthScreen> {
         await auth.register(
           email: _email.text.trim(),
           password: _password.text,
-          name: _name.text.trim(),
+          firstName: _firstName.text.trim(),
+          lastName: _lastName.text.trim(),
           phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
         );
         if (!mounted) return;
@@ -153,7 +156,16 @@ class _AuthScreenState extends State<AuthScreen> {
               FormSpacedColumn(
                 children: [
                   if (_register) ...[
-                    TextField(controller: _name, decoration: InputDecoration(labelText: l10n.fullName)),
+                    TextField(
+                      controller: _firstName,
+                      decoration: InputDecoration(labelText: l10n.firstName),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    TextField(
+                      controller: _lastName,
+                      decoration: InputDecoration(labelText: l10n.lastName),
+                      textCapitalization: TextCapitalization.words,
+                    ),
                     TextField(
                       controller: _phone,
                       decoration: InputDecoration(labelText: l10n.phone),

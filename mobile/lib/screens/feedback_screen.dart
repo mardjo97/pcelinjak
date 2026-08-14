@@ -5,6 +5,7 @@ import '../services/api_client.dart';
 import '../services/locale_service.dart';
 import '../widgets/form_spaced_column.dart';
 import '../widgets/home_fab.dart';
+import '../utils/system_insets.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key, required this.api});
@@ -76,7 +77,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       floatingActionButton: const HomeFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+        padding: EdgeInsets.fromLTRB(20, 16, 20, settingsScrollBottom(context)),
         children: [
           Text(l10n.feedbackIntro, style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 20),

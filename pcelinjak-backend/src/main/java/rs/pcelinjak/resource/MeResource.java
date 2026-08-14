@@ -14,6 +14,7 @@ import jakarta.ws.rs.core.Response;
 import rs.pcelinjak.dto.AuthDto;
 import rs.pcelinjak.entity.User;
 import rs.pcelinjak.notification.NotificationClient;
+import rs.pcelinjak.util.PersonName;
 
 @Path("/me")
 @Produces(MediaType.APPLICATION_JSON)
@@ -27,6 +28,9 @@ public class MeResource {
         public Long userId;
         public String email;
         public String name;
+        public String firstName;
+        public String lastName;
+        public String phone;
         public boolean needsFcmRefresh;
     }
 
@@ -42,12 +46,27 @@ public class MeResource {
         if (user == null) {
             return Response.status(404).entity(new AuthDto.MessageResponse("Korisnik nije pronađen.")).build();
         }
-        MeResponse res = new MeResponse();
-        res.userId = user.id;
-        res.email = user.email;
-        res.name = user.name;
-        res.needsFcmRefresh = user.needsFcmRefresh;
-        return Response.ok(res).build();
+        return Response.ok(toMe(user)).build();
+    }
+
+    @PUT
+    @Transactional
+    public Response update(AuthDto.UpdateProfileRequest req, @Context ContainerRequestContext ctx) {
+        if (req == null || isBlank(req.firstName) || isBlank(req.lastName)) {
+            return Response.status(400).entity(new AuthDto.MessageResponse("Ime i prezime su obavezni.")).build();
+        }
+        if (!isBlank(req.phone) && !AuthResource.isValidPhone(req.phone)) {
+            return Response.status(400).entity(new AuthDto.MessageResponse("Neispravan broj telefona.")).build();
+        }
+        Long userId = (Long) ctx.getProperty("userId");
+        User user = User.findById(userId);
+        if (user == null) {
+            return Response.status(404).entity(new AuthDto.MessageResponse("Korisnik nije pronađen.")).build();
+        }
+        PersonName.apply(user, req.firstName, req.lastName, null);
+        user.phone = isBlank(req.phone) ? null : req.phone.trim();
+        user.persist();
+        return Response.ok(toMe(user)).build();
     }
 
     @PUT
@@ -71,12 +90,19 @@ public class MeResource {
         user.needsFcmRefresh = false;
         user.persist();
 
+        return Response.ok(toMe(user)).build();
+    }
+
+    private static MeResponse toMe(User user) {
         MeResponse res = new MeResponse();
         res.userId = user.id;
         res.email = user.email;
         res.name = user.name;
-        res.needsFcmRefresh = false;
-        return Response.ok(res).build();
+        res.firstName = user.firstName;
+        res.lastName = user.lastName;
+        res.phone = user.phone;
+        res.needsFcmRefresh = user.needsFcmRefresh;
+        return res;
     }
 
     private static boolean isBlank(String s) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../utils/system_insets.dart';
 import '../widgets/home_fab.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
@@ -15,7 +16,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
       floatingActionButton: const HomeFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+        padding: EdgeInsets.fromLTRB(20, 16, 20, settingsScrollBottom(context)),
         children: [
           Text(l10n.privacyTitle, style: theme.textTheme.headlineSmall),
           const SizedBox(height: 8),

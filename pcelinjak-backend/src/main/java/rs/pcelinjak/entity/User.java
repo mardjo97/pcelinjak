@@ -17,6 +17,12 @@ public class User extends PcelinjakEntity {
     @Column(nullable = false)
     public String name;
 
+    @Column(name = "first_name", nullable = false)
+    public String firstName = "";
+
+    @Column(name = "last_name", nullable = false)
+    public String lastName = "";
+
     @Column
     public String phone;
 

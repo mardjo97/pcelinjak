@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../services/reminder_notification_title.dart';
 import '../services/reminder_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/system_insets.dart';
 import '../widgets/home_fab.dart';
 import 'reminder_detail_screen.dart';
 
@@ -168,7 +169,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, fabClearancePadding(context)),
       itemCount: visible.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, i) {

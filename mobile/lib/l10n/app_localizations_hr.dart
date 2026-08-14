@@ -195,8 +195,7 @@ class AppLocalizationsHr extends AppLocalizations {
   }
 
   @override
-  String get settingsIntro =>
-      'Podaci pčelara za službene obrasce (Prilog 4). ID broj pčelinjaka unosi se na svakom pčelinjaku.';
+  String get settingsIntro => 'Tema, jezik i ostale postavke aplikacije.';
 
   @override
   String get beekeeperName => 'Ime i prezime pčelara';
@@ -244,7 +243,7 @@ class AppLocalizationsHr extends AppLocalizations {
 
   @override
   String get reportsIntro =>
-      'Odaberite izvještaj, zatim format: PDF, Word (DOCX) ili CSV. Podaci pčelara (HID, ime) i ID pčelinjaka uzimaju se iz postavki.';
+      'Odaberite izvještaj, zatim format: PDF, Word (DOCX) ili CSV. Podaci pčelara (HID, ime) i ID pčelinjaka uzimaju se iz profila.';
 
   @override
   String get exportFormat => 'Format izvoza';
@@ -495,7 +494,7 @@ class AppLocalizationsHr extends AppLocalizations {
 
   @override
   String get privacyBody =>
-      'Aplikacija Pčelinjak prikuplja podatke potrebne za evidenciju pčelinjaka i sinkronizaciju sa serverom.\n\n1. Podaci o računu\nČuvamo email, ime, telefon (opcionalno) i hash lozinke. Jedan uređaj može biti aktivan po računu.\n\n2. Podaci o pčelinjaku\nKošnice, matici, bilješke, prinosi, grupe rada i podsjetnici čuvaju se lokalno i, kada koristite sync, na našem serveru vezano za vaš račun.\n\n3. Feedback\nAko pošaljete povratnu informaciju, poruka i email se čuvaju radi unapređenja aplikacije.\n\n4. Dijeljenje\nNe prodajemo osobne podatke. Podaci se koriste isključivo za funkcioniranje aplikacije.\n\n5. Brisanje\nMožete obrisati račun u Postavkama uz potvrdu lozinke. Time se brišu podaci na serveru i lokalno na uređaju.\n\n6. Kontakt\nZa pitanja o privatnosti koristite Feedback u aplikaciji.';
+      'Aplikacija Pčelinjak prikuplja podatke potrebne za evidenciju pčelinjaka i sinkronizaciju sa serverom.\n\n1. Podaci o računu\nČuvamo email, ime, prezime, telefon (opcionalno) i hash lozinke. Jedan uređaj može biti aktivan po računu.\n\n2. Podaci o pčelinjaku\nKošnice, matici, bilješke, prinosi, grupe rada i podsjetnici čuvaju se lokalno i, kada koristite sync, na našem serveru vezano za vaš račun.\n\n3. Feedback\nAko pošaljete povratnu informaciju, poruka i email se čuvaju radi unapređenja aplikacije.\n\n4. Dijeljenje\nNe prodajemo osobne podatke. Podaci se koriste isključivo za funkcioniranje aplikacije.\n\n5. Brisanje\nMožete obrisati račun u Profilu uz potvrdu lozinke. Time se brišu podaci na serveru i lokalno na uređaju.\n\n6. Kontakt\nZa pitanja o privatnosti koristite Feedback u aplikaciji.';
 
   @override
   String get feedback => 'Povratna informacija';
@@ -531,4 +530,74 @@ class AppLocalizationsHr extends AppLocalizations {
 
   @override
   String get accountDeleted => 'Račun je obrisan.';
+
+  @override
+  String get profile => 'Profil';
+
+  @override
+  String get profileIntro =>
+      'Osobni podaci za račun i službene obrasce (Prilog 4). ID broj pčelinjaka unosi se na svakom pčelinjaku.';
+
+  @override
+  String get profileAccount => 'Račun';
+
+  @override
+  String get firstName => 'Ime';
+
+  @override
+  String get lastName => 'Prezime';
+
+  @override
+  String get nameRequired => 'Unesite ime i prezime.';
+
+  @override
+  String get invalidPhone => 'Neispravan broj telefona.';
+
+  @override
+  String get profileSaved => 'Profil je spremljen.';
+
+  @override
+  String get changePassword => 'Promijeni lozinku';
+
+  @override
+  String get currentPassword => 'Trenutna lozinka';
+
+  @override
+  String get newPassword => 'Nova lozinka';
+
+  @override
+  String get confirmPassword => 'Potvrdi lozinku';
+
+  @override
+  String get passwordMismatch => 'Lozinke se ne podudaraju.';
+
+  @override
+  String get passwordTooShort => 'Nova lozinka mora imati najmanje 8 znakova.';
+
+  @override
+  String get passwordChanged => 'Lozinka je promijenjena.';
+
+  @override
+  String get settingsTextSize => 'Veličina slova';
+
+  @override
+  String get settingsTextSmall => 'Mala';
+
+  @override
+  String get settingsTextNormal => 'Obična';
+
+  @override
+  String get settingsTextLarge => 'Velika';
+
+  @override
+  String get settingsTextVeryLarge => 'Veća';
+
+  @override
+  String get settingsAutorotation => 'Autorotacija';
+
+  @override
+  String get settingsAutorotationSubtitle => 'Dozvoli pejzažni prikaz';
+
+  @override
+  String get openProfile => 'Otvori profil';
 }

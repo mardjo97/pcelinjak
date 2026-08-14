@@ -8,6 +8,7 @@ import '../models/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/apiary_edit_dialog.dart';
 import '../widgets/home_fab.dart';
+import '../utils/system_insets.dart';
 import '../widgets/keyboard_dismiss.dart';
 import 'hive_screen.dart';
 
@@ -534,7 +535,7 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
                       ),
                     )
                   : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                      padding: EdgeInsets.fromLTRB(16, 8, 16, fabClearancePadding(context)),
                       children: [
                         const Row(
                           children: [

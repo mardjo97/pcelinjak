@@ -9,6 +9,7 @@ import '../services/reminder_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hive_editors.dart';
 import '../widgets/home_fab.dart';
+import '../utils/system_insets.dart';
 import 'group_screen.dart';
 import 'hive_screen.dart';
 
@@ -159,7 +160,7 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
           : r == null
           ? const Center(child: Text('Podsetnik nije pronađen.'))
           : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+              padding: EdgeInsets.fromLTRB(20, 16, 20, fabClearancePadding(context)),
               children: [
                 Text(
                   r.title,

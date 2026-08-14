@@ -6,6 +6,7 @@ import '../services/reminder_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hive_editors.dart';
 import '../widgets/home_fab.dart';
+import '../utils/system_insets.dart';
 
 class HiveInspectionsScreen extends StatefulWidget {
   const HiveInspectionsScreen({
@@ -231,7 +232,7 @@ class _HiveInspectionsScreenState extends State<HiveInspectionsScreen> {
           : _inspections.isEmpty
           ? const Center(child: Text('Nema kontrola.'))
           : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+              padding: EdgeInsets.fromLTRB(16, 12, 16, fabClearancePadding(context)),
               itemCount: _inspections.length,
               separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, i) {

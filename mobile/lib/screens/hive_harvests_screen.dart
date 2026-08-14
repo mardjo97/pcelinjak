@@ -7,6 +7,7 @@ import '../services/group_shared_data_sync.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hive_editors.dart';
 import '../widgets/home_fab.dart';
+import '../utils/system_insets.dart';
 
 class HiveHarvestsScreen extends StatefulWidget {
   const HiveHarvestsScreen({super.key, required this.hiveUuid, this.hiveLabel});
@@ -184,7 +185,7 @@ class _HiveHarvestsScreenState extends State<HiveHarvestsScreen> {
                       : visible.isEmpty
                           ? const Center(child: Text('Nema prinosa za izabranu pašu.'))
                           : ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                              padding: EdgeInsets.fromLTRB(16, 8, 16, fabClearancePadding(context)),
                               itemCount: visible.length,
                               separatorBuilder: (context, index) => const SizedBox(height: 8),
                               itemBuilder: (context, i) {

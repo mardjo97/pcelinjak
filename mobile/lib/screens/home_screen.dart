@@ -9,6 +9,7 @@ import '../services/locale_service.dart';
 import '../services/notification_nav.dart';
 import '../services/push_device_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/system_insets.dart';
 import '../widgets/apiary_edit_dialog.dart';
 import '../widgets/sync_warning_banner.dart';
 import 'apiary_screen.dart';
@@ -227,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: RefreshIndicator(
                   onRefresh: _reload,
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, fabClearancePadding(context)),
                     children: [
                       _HomeSectionPanel(
                         tint: _sectionTint(context, AppColors.mist),

@@ -6,8 +6,9 @@ import '../services/api_client.dart';
 import '../services/beekeeper_prefs.dart';
 import '../services/report_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/system_insets.dart';
 import '../widgets/home_fab.dart';
-import 'settings_screen.dart';
+import 'profile_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key, required this.api});
@@ -111,7 +112,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             if (missingIdentity)
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: Text(l10n.openSettings),
+                child: Text(l10n.openProfile),
               )
             else
               FilledButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.ok)),
@@ -121,7 +122,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       if (goSettings == true && mounted) {
         await Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => SettingsScreen(api: widget.api)),
+          MaterialPageRoute(builder: (_) => ProfileScreen(api: widget.api)),
         );
       }
       return false;
@@ -138,7 +139,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       floatingActionButton: const HomeFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, fabClearancePadding(context)),
         children: [
           Text(l10n.reportsIntro, style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 16),

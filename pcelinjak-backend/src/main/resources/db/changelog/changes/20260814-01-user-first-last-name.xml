@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet author="dmarkovic" id="20260814-01-user-first-last-name" dbms="mysql">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="users" columnName="first_name"/>
+            </not>
+        </preConditions>
+        <comment>Split users.name into first_name / last_name for Profile</comment>
+        <sql>
+            ALTER TABLE users
+                ADD COLUMN first_name VARCHAR(255) NULL AFTER name,
+                ADD COLUMN last_name VARCHAR(255) NULL AFTER first_name;
+            UPDATE users SET
+                first_name = TRIM(SUBSTRING_INDEX(name, ' ', 1)),
+                last_name = TRIM(CASE
+                    WHEN LOCATE(' ', name) = 0 THEN ''
+                    ELSE SUBSTRING(name, LOCATE(' ', name) + 1)
+                END)
+            WHERE first_name IS NULL;
+            UPDATE users SET first_name = '' WHERE first_name IS NULL;
+            UPDATE users SET last_name = '' WHERE last_name IS NULL;
+            ALTER TABLE users
+                MODIFY first_name VARCHAR(255) NOT NULL,
+                MODIFY last_name VARCHAR(255) NOT NULL;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

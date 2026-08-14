@@ -4,6 +4,7 @@ import '../database/app_database.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/home_fab.dart';
+import '../utils/system_insets.dart';
 
 class HiveQueensScreen extends StatefulWidget {
   const HiveQueensScreen({super.key, required this.hiveUuid, this.hiveLabel});
@@ -138,7 +139,7 @@ class _HiveQueensScreenState extends State<HiveQueensScreen> {
           : _history.isEmpty
               ? const Center(child: Text('Nema ranijih matica.'))
               : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, fabClearancePadding(context)),
                   itemCount: _history.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 8),

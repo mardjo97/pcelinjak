@@ -6,6 +6,7 @@ import '../services/group_shared_data_sync.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hive_editors.dart';
 import '../widgets/home_fab.dart';
+import '../utils/system_insets.dart';
 
 class HiveNotesScreen extends StatefulWidget {
   const HiveNotesScreen({super.key, required this.hiveUuid, this.hiveLabel});
@@ -79,7 +80,7 @@ class _HiveNotesScreenState extends State<HiveNotesScreen> {
           : _notes.isEmpty
               ? const Center(child: Text('Nema napomena.'))
               : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, fabClearancePadding(context)),
                   itemCount: _notes.length,
                   separatorBuilder: (context, index) => const SizedBox(height: 8),
                   itemBuilder: (context, i) {

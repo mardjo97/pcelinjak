@@ -77,7 +77,7 @@
       "count": {"type": "int"}
     }
   },
-  "settingsIntro": "Podaci pčelara za službene obrasce (Prilog 4). ID broj pčelinjaka unosi se na svakom pčelinjaku.",
+  "settingsIntro": "Tema, jezik i ostale postavke aplikacije.",
   "beekeeperName": "Ime i prezime pčelara",
   "hidLabel": "HID (veterinarski broj gospodarstva)",
   "hidHint": "npr. 12 znamenki",
@@ -101,7 +101,7 @@
       "count": {"type": "int"}
     }
   },
-  "reportsIntro": "Odaberite izvještaj, zatim format: PDF, Word (DOCX) ili CSV. Podaci pčelara (HID, ime) i ID pčelinjaka uzimaju se iz postavki.",
+  "reportsIntro": "Odaberite izvještaj, zatim format: PDF, Word (DOCX) ili CSV. Podaci pčelara (HID, ime) i ID pčelinjaka uzimaju se iz profila.",
   "exportFormat": "Format izvoza",
   "formatPdf": "PDF",
   "formatDocx": "Word (DOCX)",
@@ -196,7 +196,7 @@
   "privacyPolicy": "Politika privatnosti",
   "privacyTitle": "Politika privatnosti – Pčelinjak",
   "privacyUpdated": "Zadnje ažuriranje: srpanj 2026.",
-  "privacyBody": "Aplikacija Pčelinjak prikuplja podatke potrebne za evidenciju pčelinjaka i sinkronizaciju sa serverom.\n\n1. Podaci o računu\nČuvamo email, ime, telefon (opcionalno) i hash lozinke. Jedan uređaj može biti aktivan po računu.\n\n2. Podaci o pčelinjaku\nKošnice, matici, bilješke, prinosi, grupe rada i podsjetnici čuvaju se lokalno i, kada koristite sync, na našem serveru vezano za vaš račun.\n\n3. Feedback\nAko pošaljete povratnu informaciju, poruka i email se čuvaju radi unapređenja aplikacije.\n\n4. Dijeljenje\nNe prodajemo osobne podatke. Podaci se koriste isključivo za funkcioniranje aplikacije.\n\n5. Brisanje\nMožete obrisati račun u Postavkama uz potvrdu lozinke. Time se brišu podaci na serveru i lokalno na uređaju.\n\n6. Kontakt\nZa pitanja o privatnosti koristite Feedback u aplikaciji.",
+  "privacyBody": "Aplikacija Pčelinjak prikuplja podatke potrebne za evidenciju pčelinjaka i sinkronizaciju sa serverom.\n\n1. Podaci o računu\nČuvamo email, ime, prezime, telefon (opcionalno) i hash lozinke. Jedan uređaj može biti aktivan po računu.\n\n2. Podaci o pčelinjaku\nKošnice, matici, bilješke, prinosi, grupe rada i podsjetnici čuvaju se lokalno i, kada koristite sync, na našem serveru vezano za vaš račun.\n\n3. Feedback\nAko pošaljete povratnu informaciju, poruka i email se čuvaju radi unapređenja aplikacije.\n\n4. Dijeljenje\nNe prodajemo osobne podatke. Podaci se koriste isključivo za funkcioniranje aplikacije.\n\n5. Brisanje\nMožete obrisati račun u Profilu uz potvrdu lozinke. Time se brišu podaci na serveru i lokalno na uređaju.\n\n6. Kontakt\nZa pitanja o privatnosti koristite Feedback u aplikaciji.",
   "feedback": "Povratna informacija",
   "feedbackIntro": "Recite nam što treba poboljšati ili što ne radi kako treba.",
   "feedbackMessage": "Poruka",
@@ -207,5 +207,28 @@
   "deleteAccount": "Obriši račun",
   "deleteAccountConfirm": "Trajno briše račun i sve podatke na serveru i na ovom telefonu. Unesite lozinku za potvrdu.",
   "passwordRequired": "Unesite lozinku.",
-  "accountDeleted": "Račun je obrisan."
+  "accountDeleted": "Račun je obrisan.",
+  "profile": "Profil",
+  "profileIntro": "Osobni podaci za račun i službene obrasce (Prilog 4). ID broj pčelinjaka unosi se na svakom pčelinjaku.",
+  "profileAccount": "Račun",
+  "firstName": "Ime",
+  "lastName": "Prezime",
+  "nameRequired": "Unesite ime i prezime.",
+  "invalidPhone": "Neispravan broj telefona.",
+  "profileSaved": "Profil je spremljen.",
+  "changePassword": "Promijeni lozinku",
+  "currentPassword": "Trenutna lozinka",
+  "newPassword": "Nova lozinka",
+  "confirmPassword": "Potvrdi lozinku",
+  "passwordMismatch": "Lozinke se ne podudaraju.",
+  "passwordTooShort": "Nova lozinka mora imati najmanje 8 znakova.",
+  "passwordChanged": "Lozinka je promijenjena.",
+  "settingsTextSize": "Veličina slova",
+  "settingsTextSmall": "Mala",
+  "settingsTextNormal": "Obična",
+  "settingsTextLarge": "Velika",
+  "settingsTextVeryLarge": "Veća",
+  "settingsAutorotation": "Autorotacija",
+  "settingsAutorotationSubtitle": "Dozvoli pejzažni prikaz",
+  "openProfile": "Otvori profil"
 }

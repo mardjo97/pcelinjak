@@ -10,7 +10,8 @@ class AuthService {
   Future<String> register({
     required String email,
     required String password,
-    required String name,
+    required String firstName,
+    required String lastName,
     String? phone,
   }) async {
     final deviceUuid = await DeviceIdService.getOrCreate();
@@ -18,7 +19,9 @@ class AuthService {
         await api.post('/auth/register', {
               'email': email,
               'password': password,
-              'name': name,
+              'firstName': firstName,
+              'lastName': lastName,
+              'name': '$firstName $lastName'.trim(),
               'phone': phone,
               'deviceUuid': deviceUuid,
             }, auth: false)
@@ -37,11 +40,48 @@ class AuthService {
             as Map<String, dynamic>;
     await api.saveSession(
       token: res['token'] as String,
-      userId: res['userId'] as int,
+      userId: (res['userId'] as num).toInt(),
       email: res['email'] as String,
       name: res['name'] as String? ?? '',
+      firstName: res['firstName'] as String?,
+      lastName: res['lastName'] as String?,
       phone: res['phone'] as String?,
     );
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required String firstName,
+    required String lastName,
+    String? phone,
+  }) async {
+    final res = await api.put('/me', {
+      'firstName': firstName,
+      'lastName': lastName,
+      'phone': phone,
+    }) as Map<String, dynamic>;
+    final token = await api.token();
+    if (token != null) {
+      await api.saveSession(
+        token: token,
+        userId: (res['userId'] as num).toInt(),
+        email: res['email'] as String? ?? '',
+        name: res['name'] as String? ?? '',
+        firstName: res['firstName'] as String?,
+        lastName: res['lastName'] as String?,
+        phone: res['phone'] as String?,
+      );
+    }
+    return res;
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await api.post('/auth/change-password', {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
   }
 
   Future<void> logout() async {

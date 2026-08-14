@@ -194,8 +194,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsIntro =>
-      'Beekeeper details for official forms (Annex 4). Apiary ID is set on each apiary.';
+  String get settingsIntro => 'Theme, language and other app preferences.';
 
   @override
   String get beekeeperName => 'Beekeeper full name';
@@ -243,7 +242,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsIntro =>
-      'Choose a report, then format: PDF, Word (DOCX) or CSV. Beekeeper data (HID, name) and apiary ID come from settings.';
+      'Choose a report, then format: PDF, Word (DOCX) or CSV. Beekeeper data (HID, name) and apiary ID come from your profile.';
 
   @override
   String get exportFormat => 'Export format';
@@ -494,7 +493,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyBody =>
-      'The Pčelinjak app collects data needed for apiary records and sync with the server.\n\n1. Account data\nWe store email, name, phone (optional) and a password hash. Only one device can be active per account.\n\n2. Apiary data\nHives, queens, notes, harvests, work groups and reminders are stored locally and, when you sync, on our server linked to your account.\n\n3. Feedback\nIf you send feedback, the message and email are stored to improve the app.\n\n4. Sharing\nWe do not sell personal data. Data is used only to operate the app.\n\n5. Deletion\nYou can delete your account in Settings with password confirmation. This removes data on the server and on this device.\n\n6. Contact\nFor privacy questions use Feedback in the app.';
+      'The Pčelinjak app collects data needed for apiary records and sync with the server.\n\n1. Account data\nWe store email, first name, last name, phone (optional) and a password hash. Only one device can be active per account.\n\n2. Apiary data\nHives, queens, notes, harvests, work groups and reminders are stored locally and, when you sync, on our server linked to your account.\n\n3. Feedback\nIf you send feedback, the message and email are stored to improve the app.\n\n4. Sharing\nWe do not sell personal data. Data is used only to operate the app.\n\n5. Deletion\nYou can delete your account in Profile with password confirmation. This removes data on the server and on this device.\n\n6. Contact\nFor privacy questions use Feedback in the app.';
 
   @override
   String get feedback => 'Feedback';
@@ -529,4 +528,74 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountDeleted => 'Account deleted.';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get profileIntro =>
+      'Account details for official forms (Annex 4). Apiary ID is set on each apiary.';
+
+  @override
+  String get profileAccount => 'Account';
+
+  @override
+  String get firstName => 'First name';
+
+  @override
+  String get lastName => 'Last name';
+
+  @override
+  String get nameRequired => 'Enter first and last name.';
+
+  @override
+  String get invalidPhone => 'Invalid phone number.';
+
+  @override
+  String get profileSaved => 'Profile saved.';
+
+  @override
+  String get changePassword => 'Change password';
+
+  @override
+  String get currentPassword => 'Current password';
+
+  @override
+  String get newPassword => 'New password';
+
+  @override
+  String get confirmPassword => 'Confirm password';
+
+  @override
+  String get passwordMismatch => 'Passwords do not match.';
+
+  @override
+  String get passwordTooShort => 'New password must be at least 8 characters.';
+
+  @override
+  String get passwordChanged => 'Password changed.';
+
+  @override
+  String get settingsTextSize => 'Text size';
+
+  @override
+  String get settingsTextSmall => 'Small';
+
+  @override
+  String get settingsTextNormal => 'Normal';
+
+  @override
+  String get settingsTextLarge => 'Large';
+
+  @override
+  String get settingsTextVeryLarge => 'Larger';
+
+  @override
+  String get settingsAutorotation => 'Autorotation';
+
+  @override
+  String get settingsAutorotationSubtitle => 'Allow landscape orientation';
+
+  @override
+  String get openProfile => 'Open profile';
 }

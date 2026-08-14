@@ -27,6 +27,7 @@ import rs.pcelinjak.entity.User;
 import rs.pcelinjak.entity.WorkGroup;
 import rs.pcelinjak.entity.WorkGroupHive;
 import rs.pcelinjak.service.MailService;
+import rs.pcelinjak.util.PersonName;
 import rs.pcelinjak.util.TokenUtil;
 
 @Path("/auth")
@@ -46,8 +47,16 @@ public class AuthResource {
     @Path("/register")
     @Transactional
     public Response register(AuthDto.RegisterRequest req) {
-        if (req == null || isBlank(req.email) || isBlank(req.password) || isBlank(req.name) || isBlank(req.deviceUuid)) {
-            return Response.status(400).entity(new AuthDto.MessageResponse("Email, lozinka, ime i deviceUuid su obavezni.")).build();
+        if (req == null || isBlank(req.email) || isBlank(req.password) || isBlank(req.deviceUuid)) {
+            return Response.status(400).entity(new AuthDto.MessageResponse("Email, lozinka i deviceUuid su obavezni.")).build();
+        }
+        boolean hasSplit = !isBlank(req.firstName) && !isBlank(req.lastName);
+        boolean hasFull = !isBlank(req.name);
+        if (!hasSplit && !hasFull) {
+            return Response.status(400).entity(new AuthDto.MessageResponse("Ime i prezime su obavezni.")).build();
+        }
+        if (!isBlank(req.phone) && !isValidPhone(req.phone)) {
+            return Response.status(400).entity(new AuthDto.MessageResponse("Neispravan broj telefona.")).build();
         }
         String email = req.email.trim().toLowerCase();
         if (User.findByEmail(email) != null) {
@@ -56,8 +65,8 @@ public class AuthResource {
         User user = new User();
         user.email = email;
         user.passwordHash = BCrypt.withDefaults().hashToString(12, req.password.toCharArray());
-        user.name = req.name.trim();
-        user.phone = req.phone != null ? req.phone.trim() : null;
+        PersonName.apply(user, req.firstName, req.lastName, req.name);
+        user.phone = isBlank(req.phone) ? null : req.phone.trim();
         user.boundDeviceUuid = null;
         user.activated = false;
         user.activationKey = TokenUtil.generateActivationKey();
@@ -166,14 +175,43 @@ public class AuthResource {
         return Response.ok(new AuthDto.MessageResponse("Nalog je obrisan.")).build();
     }
 
+    @POST
+    @Path("/change-password")
+    @Transactional
+    public Response changePassword(AuthDto.ChangePasswordRequest req, @Context ContainerRequestContext ctx) {
+        if (req == null || isBlank(req.currentPassword) || isBlank(req.newPassword)) {
+            return Response.status(400).entity(new AuthDto.MessageResponse("Trenutna i nova lozinka su obavezne.")).build();
+        }
+        if (req.newPassword.length() < 8) {
+            return Response.status(400).entity(new AuthDto.MessageResponse("Nova lozinka mora imati najmanje 8 karaktera.")).build();
+        }
+        Long userId = (Long) ctx.getProperty("userId");
+        User user = User.findById(userId);
+        if (user == null) {
+            return Response.status(404).entity(new AuthDto.MessageResponse("Korisnik nije pronađen.")).build();
+        }
+        if (!BCrypt.verifyer().verify(req.currentPassword.toCharArray(), user.passwordHash).verified) {
+            return Response.status(400).entity(new AuthDto.MessageResponse("Pogrešna lozinka.")).build();
+        }
+        user.passwordHash = BCrypt.withDefaults().hashToString(12, req.newPassword.toCharArray());
+        user.persist();
+        return Response.ok(new AuthDto.MessageResponse("Lozinka je promenjena.")).build();
+    }
+
     private AuthDto.LoginResponse loginPayload(User user) {
         AuthDto.LoginResponse res = new AuthDto.LoginResponse();
         res.token = jwtService.createToken(user.id, user.email);
         res.userId = user.id;
         res.email = user.email;
         res.name = user.name;
+        res.firstName = user.firstName;
+        res.lastName = user.lastName;
         res.phone = user.phone;
         return res;
+    }
+
+    static boolean isValidPhone(String phone) {
+        return phone != null && phone.trim().matches("\\+?[0-9][0-9\\s().\\-]{5,19}");
     }
 
     private static boolean isBlank(String s) {
