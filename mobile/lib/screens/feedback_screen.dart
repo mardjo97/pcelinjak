@@ -53,7 +53,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       await widget.api.post('/api/feedback', {
         'message': message,
         'email': _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
-        'appVersion': '1.0.1',
+        'appVersion': '1.0.2',
         'locale': LocaleController.instance.locale.languageCode,
       });
       if (!mounted) return;
