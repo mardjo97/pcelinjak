@@ -490,7 +490,7 @@ class AppLocalizationsCnr extends AppLocalizations {
   String get privacyTitle => 'Politika privatnosti – Pčelinjak';
 
   @override
-  String get privacyUpdated => 'Poslednje ažuriranje: jul 2026.';
+  String get privacyUpdated => 'Poslednje ažuriranje: avgust 2026.';
 
   @override
   String get privacyBody =>

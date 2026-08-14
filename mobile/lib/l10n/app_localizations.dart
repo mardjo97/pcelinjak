@@ -1007,7 +1007,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyUpdated.
   ///
   /// In sr, this message translates to:
-  /// **'Poslednje ažuriranje: jul 2026.'**
+  /// **'Poslednje ažuriranje: avgust 2026.'**
   String get privacyUpdated;
 
   /// No description provided for @privacyBody.

@@ -489,7 +489,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privacyTitle => 'Privacy policy – Pčelinjak';
 
   @override
-  String get privacyUpdated => 'Last updated: July 2026.';
+  String get privacyUpdated => 'Last updated: August 2026.';
 
   @override
   String get privacyBody =>

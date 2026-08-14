@@ -195,7 +195,7 @@
   "settingsDanger": "Račun",
   "privacyPolicy": "Politika privatnosti",
   "privacyTitle": "Politika privatnosti – Pčelinjak",
-  "privacyUpdated": "Zadnje ažuriranje: srpanj 2026.",
+  "privacyUpdated": "Zadnje ažuriranje: kolovoz 2026.",
   "privacyBody": "Aplikacija Pčelinjak prikuplja podatke potrebne za evidenciju pčelinjaka i sinkronizaciju sa serverom.\n\n1. Podaci o računu\nČuvamo email, ime, prezime, telefon (opcionalno) i hash lozinke. Jedan uređaj može biti aktivan po računu.\n\n2. Podaci o pčelinjaku\nKošnice, matici, bilješke, prinosi, grupe rada i podsjetnici čuvaju se lokalno i, kada koristite sync, na našem serveru vezano za vaš račun.\n\n3. Feedback\nAko pošaljete povratnu informaciju, poruka i email se čuvaju radi unapređenja aplikacije.\n\n4. Dijeljenje\nNe prodajemo osobne podatke. Podaci se koriste isključivo za funkcioniranje aplikacije.\n\n5. Brisanje\nMožete obrisati račun u Profilu uz potvrdu lozinke. Time se brišu podaci na serveru i lokalno na uređaju.\n\n6. Kontakt\nZa pitanja o privatnosti koristite Feedback u aplikaciji.",
   "feedback": "Povratna informacija",
   "feedbackIntro": "Recite nam što treba poboljšati ili što ne radi kako treba.",

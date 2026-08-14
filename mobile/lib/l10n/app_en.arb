@@ -195,7 +195,7 @@
   "settingsDanger": "Account",
   "privacyPolicy": "Privacy policy",
   "privacyTitle": "Privacy policy – Pčelinjak",
-  "privacyUpdated": "Last updated: July 2026.",
+  "privacyUpdated": "Last updated: August 2026.",
   "privacyBody": "The Pčelinjak app collects data needed for apiary records and sync with the server.\n\n1. Account data\nWe store email, first name, last name, phone (optional) and a password hash. Only one device can be active per account.\n\n2. Apiary data\nHives, queens, notes, harvests, work groups and reminders are stored locally and, when you sync, on our server linked to your account.\n\n3. Feedback\nIf you send feedback, the message and email are stored to improve the app.\n\n4. Sharing\nWe do not sell personal data. Data is used only to operate the app.\n\n5. Deletion\nYou can delete your account in Profile with password confirmation. This removes data on the server and on this device.\n\n6. Contact\nFor privacy questions use Feedback in the app.",
   "feedback": "Feedback",
   "feedbackIntro": "Tell us what to improve or what is not working.",
