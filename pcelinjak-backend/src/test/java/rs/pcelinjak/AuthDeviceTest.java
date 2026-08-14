@@ -30,7 +30,7 @@ public class AuthDeviceTest {
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "email", email,
-                        "password", "secret123",
+                        "password", "Secret123",
                         "name", "Nenad",
                         "deviceUuid", deviceA))
                 .when().post("/auth/register")
@@ -41,7 +41,7 @@ public class AuthDeviceTest {
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "email", email,
-                        "password", "secret123",
+                        "password", "Secret123",
                         "deviceUuid", deviceA))
                 .when().post("/auth/login")
                 .then().statusCode(403);
@@ -56,7 +56,7 @@ public class AuthDeviceTest {
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "email", email,
-                        "password", "secret123",
+                        "password", "Secret123",
                         "deviceUuid", deviceA))
                 .when().post("/auth/login")
                 .then().statusCode(200)
@@ -73,7 +73,7 @@ public class AuthDeviceTest {
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "email", email,
-                        "password", "secret123",
+                        "password", "Secret123",
                         "deviceUuid", deviceB))
                 .when().post("/auth/login")
                 .then().statusCode(200);

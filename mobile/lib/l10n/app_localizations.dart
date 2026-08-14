@@ -1163,7 +1163,7 @@ abstract class AppLocalizations {
   /// No description provided for @passwordTooShort.
   ///
   /// In sr, this message translates to:
-  /// **'Nova lozinka mora imati najmanje 8 karaktera.'**
+  /// **'Nova lozinka mora imati najmanje 6 karaktera.'**
   String get passwordTooShort;
 
   /// No description provided for @passwordChanged.
@@ -1171,6 +1171,60 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Lozinka je promenjena.'**
   String get passwordChanged;
+
+  /// No description provided for @passwordHint.
+  ///
+  /// In sr, this message translates to:
+  /// **'Najmanje 6 karaktera, veliko i malo slovo i broj'**
+  String get passwordHint;
+
+  /// No description provided for @passwordMustInclude.
+  ///
+  /// In sr, this message translates to:
+  /// **'Lozinka mora imati: {requirements}.'**
+  String passwordMustInclude(String requirements);
+
+  /// No description provided for @passwordReqLength.
+  ///
+  /// In sr, this message translates to:
+  /// **'najmanje 6 karaktera'**
+  String get passwordReqLength;
+
+  /// No description provided for @passwordReqUpper.
+  ///
+  /// In sr, this message translates to:
+  /// **'veliko slovo'**
+  String get passwordReqUpper;
+
+  /// No description provided for @passwordReqLower.
+  ///
+  /// In sr, this message translates to:
+  /// **'malo slovo'**
+  String get passwordReqLower;
+
+  /// No description provided for @passwordReqDigit.
+  ///
+  /// In sr, this message translates to:
+  /// **'broj'**
+  String get passwordReqDigit;
+
+  /// No description provided for @listAnd.
+  ///
+  /// In sr, this message translates to:
+  /// **'i'**
+  String get listAnd;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prikaži lozinku'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sakrij lozinku'**
+  String get hidePassword;
 
   /// No description provided for @settingsTextSize.
   ///

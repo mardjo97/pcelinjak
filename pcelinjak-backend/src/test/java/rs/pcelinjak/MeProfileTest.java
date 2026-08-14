@@ -25,7 +25,7 @@ public class MeProfileTest {
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "email", email,
-                        "password", "secret123",
+                        "password", "Secret123",
                         "firstName", "Ana",
                         "lastName", "Marković",
                         "phone", "+381641234567",
@@ -43,7 +43,7 @@ public class MeProfileTest {
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "email", email,
-                        "password", "secret123",
+                        "password", "Secret123",
                         "deviceUuid", device))
                 .when().post("/auth/login")
                 .then().statusCode(200)
@@ -77,8 +77,8 @@ public class MeProfileTest {
                 .body("lastName", equalTo("Petrović"));
 
         Map<String, String> change = new HashMap<>();
-        change.put("currentPassword", "secret123");
-        change.put("newPassword", "newpass99");
+        change.put("currentPassword", "Secret123");
+        change.put("newPassword", "Newpass1");
 
         given()
                 .header("Authorization", "Bearer " + token)
@@ -93,7 +93,7 @@ public class MeProfileTest {
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "email", email,
-                        "password", "newpass99",
+                        "password", "Newpass1",
                         "deviceUuid", device))
                 .when().post("/auth/login")
                 .then().statusCode(200);

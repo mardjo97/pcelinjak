@@ -27,6 +27,7 @@ import rs.pcelinjak.entity.User;
 import rs.pcelinjak.entity.WorkGroup;
 import rs.pcelinjak.entity.WorkGroupHive;
 import rs.pcelinjak.service.MailService;
+import rs.pcelinjak.util.PasswordRules;
 import rs.pcelinjak.util.PersonName;
 import rs.pcelinjak.util.TokenUtil;
 
@@ -57,6 +58,10 @@ public class AuthResource {
         }
         if (!isBlank(req.phone) && !isValidPhone(req.phone)) {
             return Response.status(400).entity(new AuthDto.MessageResponse("Neispravan broj telefona.")).build();
+        }
+        String passwordError = PasswordRules.errorMessage(req.password);
+        if (passwordError != null) {
+            return Response.status(400).entity(new AuthDto.MessageResponse(passwordError)).build();
         }
         String email = req.email.trim().toLowerCase();
         if (User.findByEmail(email) != null) {
@@ -182,8 +187,9 @@ public class AuthResource {
         if (req == null || isBlank(req.currentPassword) || isBlank(req.newPassword)) {
             return Response.status(400).entity(new AuthDto.MessageResponse("Trenutna i nova lozinka su obavezne.")).build();
         }
-        if (req.newPassword.length() < 8) {
-            return Response.status(400).entity(new AuthDto.MessageResponse("Nova lozinka mora imati najmanje 8 karaktera.")).build();
+        String passwordError = PasswordRules.errorMessage(req.newPassword);
+        if (passwordError != null) {
+            return Response.status(400).entity(new AuthDto.MessageResponse(passwordError)).build();
         }
         Long userId = (Long) ctx.getProperty("userId");
         User user = User.findById(userId);

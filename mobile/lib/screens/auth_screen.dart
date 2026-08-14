@@ -9,6 +9,8 @@ import '../services/push_device_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/form_spaced_column.dart';
 import '../widgets/language_picker.dart';
+import '../widgets/password_field.dart';
+import '../utils/password_rules.dart';
 import 'home_screen.dart';
 import 'privacy_policy_screen.dart';
 
@@ -66,6 +68,13 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         );
         if (ok != true || !mounted) return;
+      }
+    }
+    if (_register) {
+      final passwordError = PasswordRules.errorMessage(l10n, _password.text);
+      if (passwordError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(passwordError)));
+        return;
       }
     }
     setState(() => _loading = true);
@@ -177,10 +186,10 @@ class _AuthScreenState extends State<AuthScreen> {
                     decoration: InputDecoration(labelText: l10n.email),
                     keyboardType: TextInputType.emailAddress,
                   ),
-                  TextField(
+                  PasswordField(
                     controller: _password,
-                    decoration: InputDecoration(labelText: l10n.password),
-                    obscureText: true,
+                    label: l10n.password,
+                    helperText: _register ? l10n.passwordHint : null,
                   ),
                 ],
               ),

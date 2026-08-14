@@ -572,10 +572,39 @@ class AppLocalizationsHr extends AppLocalizations {
   String get passwordMismatch => 'Lozinke se ne podudaraju.';
 
   @override
-  String get passwordTooShort => 'Nova lozinka mora imati najmanje 8 znakova.';
+  String get passwordTooShort => 'Nova lozinka mora imati najmanje 6 znakova.';
 
   @override
   String get passwordChanged => 'Lozinka je promijenjena.';
+
+  @override
+  String get passwordHint => 'Najmanje 6 znakova, veliko i malo slovo i broj';
+
+  @override
+  String passwordMustInclude(String requirements) {
+    return 'Lozinka mora imati: $requirements.';
+  }
+
+  @override
+  String get passwordReqLength => 'najmanje 6 znakova';
+
+  @override
+  String get passwordReqUpper => 'veliko slovo';
+
+  @override
+  String get passwordReqLower => 'malo slovo';
+
+  @override
+  String get passwordReqDigit => 'broj';
+
+  @override
+  String get listAnd => 'i';
+
+  @override
+  String get showPassword => 'Prikaži lozinku';
+
+  @override
+  String get hidePassword => 'Sakrij lozinku';
 
   @override
   String get settingsTextSize => 'Veličina slova';

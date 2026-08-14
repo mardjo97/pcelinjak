@@ -221,8 +221,22 @@
   "newPassword": "Nova lozinka",
   "confirmPassword": "Potvrdi lozinku",
   "passwordMismatch": "Lozinke se ne poklapaju.",
-  "passwordTooShort": "Nova lozinka mora imati najmanje 8 karaktera.",
+  "passwordTooShort": "Nova lozinka mora imati najmanje 6 karaktera.",
   "passwordChanged": "Lozinka je promenjena.",
+  "passwordHint": "Najmanje 6 karaktera, veliko i malo slovo i broj",
+  "passwordMustInclude": "Lozinka mora imati: {requirements}.",
+  "@passwordMustInclude": {
+    "placeholders": {
+      "requirements": {"type": "String"}
+    }
+  },
+  "passwordReqLength": "najmanje 6 karaktera",
+  "passwordReqUpper": "veliko slovo",
+  "passwordReqLower": "malo slovo",
+  "passwordReqDigit": "broj",
+  "listAnd": "i",
+  "showPassword": "Prikaži lozinku",
+  "hidePassword": "Sakrij lozinku",
   "settingsTextSize": "Veličina slova",
   "settingsTextSmall": "Mala",
   "settingsTextNormal": "Obična",

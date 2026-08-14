@@ -5,9 +5,11 @@ import '../services/api_client.dart';
 import '../services/auth_sync.dart';
 import '../services/auto_sync_service.dart';
 import '../services/beekeeper_prefs.dart';
+import '../utils/password_rules.dart';
 import '../utils/system_insets.dart';
 import '../widgets/form_spaced_column.dart';
 import '../widgets/home_fab.dart';
+import '../widgets/password_field.dart';
 import 'auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -311,11 +313,10 @@ class _DeleteAccountPasswordDialogState extends State<_DeleteAccountPasswordDial
         children: [
           Text(l10n.deleteAccountConfirm),
           const SizedBox(height: 16),
-          TextField(
+          PasswordField(
             controller: _passwordCtrl,
-            obscureText: true,
+            label: l10n.password,
             autofocus: true,
-            decoration: InputDecoration(labelText: l10n.password),
             onSubmitted: (v) => Navigator.pop(context, v),
           ),
         ],
@@ -363,8 +364,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordRequired)));
       return;
     }
-    if (next.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordTooShort)));
+    final passwordError = PasswordRules.errorMessage(l10n, next);
+    if (passwordError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(passwordError)));
       return;
     }
     if (next != confirm) {
@@ -379,30 +381,30 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
     final l10n = widget.l10n;
     return AlertDialog(
       title: Text(l10n.changePassword),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: _currentCtrl,
-            obscureText: true,
-            autofocus: true,
-            decoration: InputDecoration(labelText: l10n.currentPassword),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _newCtrl,
-            obscureText: true,
-            decoration: InputDecoration(labelText: l10n.newPassword),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _confirmCtrl,
-            obscureText: true,
-            decoration: InputDecoration(labelText: l10n.confirmPassword),
-            onSubmitted: (_) => _submit(),
-          ),
-        ],
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PasswordField(
+              controller: _currentCtrl,
+              label: l10n.currentPassword,
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            PasswordField(
+              controller: _newCtrl,
+              label: l10n.newPassword,
+              helperText: l10n.passwordHint,
+            ),
+            const SizedBox(height: 12),
+            PasswordField(
+              controller: _confirmCtrl,
+              label: l10n.confirmPassword,
+              onSubmitted: (_) => _submit(),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),

@@ -570,10 +570,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordMismatch => 'Passwords do not match.';
 
   @override
-  String get passwordTooShort => 'New password must be at least 8 characters.';
+  String get passwordTooShort => 'New password must be at least 6 characters.';
 
   @override
   String get passwordChanged => 'Password changed.';
+
+  @override
+  String get passwordHint =>
+      'At least 6 characters, an uppercase letter, a lowercase letter and a number';
+
+  @override
+  String passwordMustInclude(String requirements) {
+    return 'Password must include: $requirements.';
+  }
+
+  @override
+  String get passwordReqLength => 'at least 6 characters';
+
+  @override
+  String get passwordReqUpper => 'an uppercase letter';
+
+  @override
+  String get passwordReqLower => 'a lowercase letter';
+
+  @override
+  String get passwordReqDigit => 'a number';
+
+  @override
+  String get listAnd => 'and';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
 
   @override
   String get settingsTextSize => 'Text size';
