@@ -91,7 +91,7 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
     await ReminderService.instance.cancel(r.uuid.hashCode & 0x7fffffff);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Podsetnik označen kao urađen')),
+      SnackBar(content: Text(AppLocalizations.of(context).reminderMarkedDone)),
     );
     await _load();
   }
@@ -152,13 +152,13 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
     final r = _reminder;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Podsetnik')),
+      appBar: AppBar(title: Text(l10n.reminder)),
       floatingActionButton: const HomeFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : r == null
-          ? const Center(child: Text('Podsetnik nije pronađen.'))
+          ? Center(child: Text(l10n.reminderNotFound))
           : ListView(
               padding: EdgeInsets.fromLTRB(20, 16, 20, fabClearancePadding(context)),
               children: [
@@ -174,18 +174,18 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
                 if (r.completed)
                   _infoRow(
                     Icons.check_circle,
-                    'Završeno',
+                    l10n.completed,
                     color: AppColors.meadow,
                   )
                 else if (r.dueAt.isBefore(DateTime.now()))
                   _infoRow(
                     Icons.warning_amber,
-                    'Zakasnelo',
+                    l10n.overdue,
                     color: Colors.red.shade700,
                   ),
                 const SizedBox(height: 20),
                 Text(
-                  'Povezano',
+                  l10n.related,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -195,7 +195,7 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.hive_outlined),
-                    title: Text('Košnica ${_hive!.barcode}'),
+                    title: Text(l10n.hiveBarcode(_hive!.barcode)),
                     subtitle: Text(
                       [
                         if (_apiary != null) _apiary!.name,
@@ -207,7 +207,7 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
                   ),
                 ] else
                   Text(
-                    'Nema povezane košnice.',
+                    l10n.noLinkedHive,
                     style: TextStyle(color: AppTheme.muted(context)),
                   ),
                 if (_group != null)
@@ -229,7 +229,7 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.fact_check_outlined),
-                    title: const Text('Kontrola košnice'),
+                    title: Text(l10n.hiveInspection),
                     subtitle: Text(
                       [
                         _inspection!.inspectedAt
@@ -237,8 +237,8 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
                             .toString()
                             .split('.')
                             .first,
-                        inspectionValueLabel(
-                          inspectionOutcomeStatuses,
+                        LocaleController.inspectionOutcomeLabel(
+                          l10n,
                           _inspection!.outcomeStatus,
                         ),
                       ].join(' · '),
@@ -251,14 +251,14 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
                   FilledButton.icon(
                     onPressed: _complete,
                     icon: const Icon(Icons.check),
-                    label: const Text('Označi kao urađeno'),
+                    label: Text(l10n.markDone),
                   ),
                 if (_hive != null) ...[
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: _openHive,
                     icon: const Icon(Icons.hive_outlined),
-                    label: const Text('Otvori košnicu'),
+                    label: Text(l10n.openHive),
                   ),
                 ],
                 if (_group != null) ...[
@@ -266,7 +266,7 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
                   OutlinedButton.icon(
                     onPressed: _openGroup,
                     icon: const Icon(Icons.groups_outlined),
-                    label: const Text('Otvori grupu'),
+                    label: Text(l10n.openGroup),
                   ),
                 ],
                 if (_hive != null &&
@@ -278,8 +278,8 @@ class _ReminderDetailScreenState extends State<ReminderDetailScreen> {
                     icon: const Icon(Icons.fact_check_outlined),
                     label: Text(
                       _inspection == null
-                          ? 'Evidentiraj kontrolu'
-                          : 'Otvori kontrolu',
+                          ? l10n.recordInspection
+                          : l10n.openInspection,
                     ),
                   ),
                 ],

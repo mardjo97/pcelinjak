@@ -553,11 +553,15 @@ class _GroupScreenState extends State<GroupScreen> {
   Future<({Hive? hive, String? error})> _resolveHiveForGroup(
     String code,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final hive = await db.findHiveByBarcode(code);
     if (hive == null) {
       return (hive: null, error: 'Nije u bazi: $code');
     }
-    final statusBlock = HiveStatusRules.blockReasonAddToGroup(hive.status);
+    final statusBlock = HiveStatusRules.blockReasonAddToGroup(
+      l10n,
+      hive.status,
+    );
     if (statusBlock != null) {
       return (hive: null, error: '${hive.barcode}: $statusBlock');
     }
@@ -1200,6 +1204,7 @@ class _GroupScreenState extends State<GroupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = workGroupColor(widget.groupType);
     final showingHistory = _filter != 'ACTIVE';
     final visible = _filtered;
@@ -1213,29 +1218,29 @@ class _GroupScreenState extends State<GroupScreen> {
         ),
         actions: [
           PopupMenuButton<String>(
-            tooltip: 'Istorija / filter',
+            tooltip: l10n.filterAllHistory,
             icon: const Icon(Icons.history),
             onSelected: _setFilter,
             itemBuilder: (_) => [
               CheckedPopupMenuItem(
                 value: 'ACTIVE',
                 checked: _filter == 'ACTIVE',
-                child: const Text('Aktivne'),
+                child: Text(l10n.filterActive),
               ),
               CheckedPopupMenuItem(
                 value: 'FINISHED',
                 checked: _filter == 'FINISHED',
-                child: const Text('Završene'),
+                child: Text(l10n.filterFinished),
               ),
               CheckedPopupMenuItem(
                 value: 'REMOVED',
                 checked: _filter == 'REMOVED',
-                child: const Text('Uklonjene (greška)'),
+                child: Text(l10n.filterRemoved),
               ),
               CheckedPopupMenuItem(
                 value: 'ALL',
                 checked: _filter == 'ALL',
-                child: const Text('Sve (istorija)'),
+                child: Text(l10n.filterAllHistory),
               ),
             ],
           ),
@@ -1266,25 +1271,25 @@ class _GroupScreenState extends State<GroupScreen> {
               child: Row(
                 children: [
                   _FilterChip(
-                    label: 'Aktivne',
+                    label: l10n.filterActive,
                     selected: _filter == 'ACTIVE',
                     color: color,
                     onTap: () => _setFilter('ACTIVE'),
                   ),
                   _FilterChip(
-                    label: 'Završene',
+                    label: l10n.filterFinished,
                     selected: _filter == 'FINISHED',
                     color: _membershipColor('FINISHED', color),
                     onTap: () => _setFilter('FINISHED'),
                   ),
                   _FilterChip(
-                    label: 'Uklonjene',
+                    label: l10n.filterRemoved,
                     selected: _filter == 'REMOVED',
                     color: _membershipColor('REMOVED', color),
                     onTap: () => _setFilter('REMOVED'),
                   ),
                   _FilterChip(
-                    label: 'Sve',
+                    label: l10n.statusAll,
                     selected: _filter == 'ALL',
                     color: color,
                     onTap: () => _setFilter('ALL'),
@@ -1419,7 +1424,10 @@ class _GroupScreenState extends State<GroupScreen> {
                                                     BorderRadius.circular(8),
                                               ),
                                               child: Text(
-                                                item.statusLabel,
+                                                LocaleController.membershipStatusLabel(
+                                                  l10n,
+                                                  item.membershipStatus,
+                                                ),
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 11,

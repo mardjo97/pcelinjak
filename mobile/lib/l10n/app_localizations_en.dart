@@ -628,4 +628,366 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openProfile => 'Open profile';
+
+  @override
+  String get authLoginInvalidCredentials => 'Wrong email or password.';
+
+  @override
+  String get authAccountNotActivated =>
+      'Account is not activated. Check your email for the activation link.';
+
+  @override
+  String get authEmailExists => 'A user with this email already exists.';
+
+  @override
+  String get authWrongPassword => 'Wrong password.';
+
+  @override
+  String get authUserNotFound => 'User not found.';
+
+  @override
+  String get hiveSearchAllHint =>
+      'All hives · filter by barcode, apiary name/number, type (LR, DB…), queen year, origin, “marked”…';
+
+  @override
+  String hiveSearchResultCount(int count) {
+    return '$count results';
+  }
+
+  @override
+  String hiveSearchNoResults(String query) {
+    return 'No results for “$query”.';
+  }
+
+  @override
+  String get noQueen => 'No queen';
+
+  @override
+  String get queenMarkedShort => 'marked';
+
+  @override
+  String queenLine(String details) {
+    return 'Queen: $details';
+  }
+
+  @override
+  String apiaryNamed(int number, String name) {
+    return 'Apiary $number · $name';
+  }
+
+  @override
+  String get remindersShowHistory => 'Show history';
+
+  @override
+  String get remindersCompletedList => 'Completed reminders';
+
+  @override
+  String get remindersUpcomingList => 'Upcoming and overdue';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get tomorrow => 'Tomorrow';
+
+  @override
+  String get remindersEmptyUpcoming => 'No upcoming reminders.';
+
+  @override
+  String get remindersEmptyHistory => 'No completed reminders.';
+
+  @override
+  String remindersNoneForDay(String day) {
+    return 'No reminders for $day.';
+  }
+
+  @override
+  String get reminderReactivated => 'Reminder is active again';
+
+  @override
+  String get markDone => 'Mark as done';
+
+  @override
+  String get restoreActive => 'Restore to active';
+
+  @override
+  String hiveBarcode(String barcode) {
+    return 'Hive $barcode';
+  }
+
+  @override
+  String get overdue => 'Overdue';
+
+  @override
+  String get reminder => 'Reminder';
+
+  @override
+  String get reminderNotFound => 'Reminder not found.';
+
+  @override
+  String get completed => 'Completed';
+
+  @override
+  String get related => 'Related';
+
+  @override
+  String get noLinkedHive => 'No linked hive.';
+
+  @override
+  String get openHive => 'Open hive';
+
+  @override
+  String get openGroup => 'Open group';
+
+  @override
+  String get recordInspection => 'Record inspection';
+
+  @override
+  String get openInspection => 'Open inspection';
+
+  @override
+  String get reminderMarkedDone => 'Reminder marked as done';
+
+  @override
+  String get hiveNotFound => 'Hive not found.';
+
+  @override
+  String loadError(String error) {
+    return 'Could not load: $error';
+  }
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get previousHive => 'Previous hive';
+
+  @override
+  String get nextHive => 'Next hive';
+
+  @override
+  String get editHive => 'Edit hive';
+
+  @override
+  String get editNotAllowed => 'Edit (not allowed)';
+
+  @override
+  String get deleteHive => 'Delete hive';
+
+  @override
+  String get deleteHiveConfirm =>
+      'The hive will be deleted (it can sync as deleted).';
+
+  @override
+  String get hiveStatusConfirmTitle => 'Hive status';
+
+  @override
+  String hiveStatusConfirmBody(String status) {
+    return 'Set status to “$status”?';
+  }
+
+  @override
+  String hiveStatusTransitionBlocked(String from, String to) {
+    return 'Cannot change $from → $to.';
+  }
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String get move => 'Move';
+
+  @override
+  String get locationNotEntered => 'Location not entered';
+
+  @override
+  String get queenOnlyActive => 'Active only';
+
+  @override
+  String get enterQueen => 'Add queen';
+
+  @override
+  String get editCurrentQueen => 'Edit current';
+
+  @override
+  String get editQueen => 'Edit queen';
+
+  @override
+  String hiveQueenBlocked(String status) {
+    return 'The queen can be changed only on an active hive (now: $status).';
+  }
+
+  @override
+  String hiveHarvestBlocked(String status) {
+    return 'Harvest can be added only on an active hive (now: $status).';
+  }
+
+  @override
+  String get hiveEditBlocked =>
+      'A dead hive cannot be edited — set it to active first.';
+
+  @override
+  String hiveAddToGroupBlocked(String status) {
+    return 'Hive is “$status” — only active hives can be added to groups.';
+  }
+
+  @override
+  String get noActiveQueen => 'No active queen.';
+
+  @override
+  String queenYearLabel(String year) {
+    return 'Year: $year';
+  }
+
+  @override
+  String queenMarkedLabel(String value) {
+    return 'Marked: $value';
+  }
+
+  @override
+  String get year => 'Year';
+
+  @override
+  String get origin => 'Origin';
+
+  @override
+  String get marked => 'Marked';
+
+  @override
+  String get yes => 'YES';
+
+  @override
+  String get no => 'NO';
+
+  @override
+  String originWithValue(String value) {
+    return 'Origin: $value';
+  }
+
+  @override
+  String periodFrom(String date) {
+    return 'From $date';
+  }
+
+  @override
+  String get newQueen => 'New queen';
+
+  @override
+  String get endQueen => 'End queen';
+
+  @override
+  String get endQueenDied => 'End / died';
+
+  @override
+  String queenHistoryCount(int count) {
+    return 'Queen history ($count)';
+  }
+
+  @override
+  String currentQueenLine(String year, String period) {
+    return 'Current: year $year · $period';
+  }
+
+  @override
+  String get queenEndReasonLabel => 'What happened to the previous queen?';
+
+  @override
+  String get enterNewQueenAfter => 'Then enter the new queen’s details.';
+
+  @override
+  String get queenEndDied => 'Died';
+
+  @override
+  String get queenEndReplaced => 'Replaced';
+
+  @override
+  String get queenEndSuperseded => 'Superseded';
+
+  @override
+  String get queenEndOther => 'Other';
+
+  @override
+  String get hiveInspection => 'Hive inspection';
+
+  @override
+  String get addInspection => 'Add inspection';
+
+  @override
+  String get noInspectionsYet => 'No inspections for this hive yet.';
+
+  @override
+  String get lastInspection => 'Latest inspection';
+
+  @override
+  String get source => 'Source';
+
+  @override
+  String allInspections(int count) {
+    return 'All inspections ($count)';
+  }
+
+  @override
+  String get addNote => 'Add note';
+
+  @override
+  String get noNotesYet => 'No notes for this hive yet.';
+
+  @override
+  String get lastNote => 'Latest note';
+
+  @override
+  String reminderAt(String when) {
+    return 'Reminder: $when';
+  }
+
+  @override
+  String allNotes(int count) {
+    return 'All notes ($count)';
+  }
+
+  @override
+  String get honeyHarvest => 'Honey yield';
+
+  @override
+  String get addHarvest => 'Add harvest';
+
+  @override
+  String harvestYearTotal(int year, String amount) {
+    return 'Total $year: $amount kg';
+  }
+
+  @override
+  String get noHarvestsThisYear => 'No harvests recorded this year.';
+
+  @override
+  String allHarvests(int count) {
+    return 'All harvests ($count)';
+  }
+
+  @override
+  String get deleteNoteTitle => 'Delete note';
+
+  @override
+  String get deleteNoteConfirm => 'Delete this note?';
+
+  @override
+  String get inspectionSourceManual => 'Manual';
+
+  @override
+  String get inspectionSourceGroup => 'Inspection group';
+
+  @override
+  String get inspectionSourceReminder => 'Reminder';
+
+  @override
+  String get inspectionOutcomeOk => 'OK';
+
+  @override
+  String get inspectionOutcomeFollowUp => 'Follow-up needed';
+
+  @override
+  String get inspectionOutcomeUrgent => 'Urgent';
+
+  @override
+  String get inspectionOutcomeResolved => 'Resolved';
 }

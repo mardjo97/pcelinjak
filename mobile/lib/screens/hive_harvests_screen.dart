@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../database/app_database.dart';
+import '../l10n/app_localizations.dart';
 import '../models/hive_status_rules.dart';
 import '../models/models.dart';
 import '../services/group_shared_data_sync.dart';
@@ -56,7 +57,8 @@ class _HiveHarvestsScreenState extends State<HiveHarvestsScreen> {
   double get _visibleSum => _visible.fold<double>(0, (s, h) => s + h.amountKg);
 
   Future<void> _addOrEdit({Harvest? existing}) async {
-    final blocked = HiveStatusRules.blockReasonHarvest(_hiveStatus);
+    final l10n = AppLocalizations.of(context);
+    final blocked = HiveStatusRules.blockReasonHarvest(l10n, _hiveStatus);
     if (blocked != null && existing == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(blocked)));
@@ -89,6 +91,7 @@ class _HiveHarvestsScreenState extends State<HiveHarvestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final visible = _visible;
     return Scaffold(
       appBar: AppBar(
@@ -131,7 +134,7 @@ class _HiveHarvestsScreenState extends State<HiveHarvestsScreen> {
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: FilterChip(
-                            label: Text('Sve (${_yearSum.toStringAsFixed(1)} kg)'),
+                            label: Text('${l10n.statusAll} (${_yearSum.toStringAsFixed(1)} kg)'),
                             selected: _pastureFilter == null,
                             selectedColor: const Color(0xFF2B6CB0),
                             checkmarkColor: Colors.white,

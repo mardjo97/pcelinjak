@@ -9,6 +9,10 @@ void main() {
   bs = bs.replaceAll('Izmena pčelinjaka', 'Izmjena pčelinjaka');
   bs = bs.replaceAll('"edit": "Izmeni"', '"edit": "Izmijeni"');
   bs = bs.replaceAll('Izmeni u grupi', 'Izmijeni u grupi');
+  bs = bs.replaceAll('Izmeni košnicu', 'Izmijeni košnicu');
+  bs = bs.replaceAll('Izmeni trenutnu', 'Izmijeni trenutnu');
+  bs = bs.replaceAll('Izmeni maticu', 'Izmijeni maticu');
+  bs = bs.replaceAll('Izmeni (nije dozvoljeno)', 'Izmijeni (nije dozvoljeno)');
   File('${base.path}/app_bs.arb').writeAsStringSync(bs);
 
   final cnr = sr.replaceFirst('"@@locale": "sr"', '"@@locale": "cnr"');

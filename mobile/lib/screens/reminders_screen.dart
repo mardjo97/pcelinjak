@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../services/reminder_notification_title.dart';
 import '../services/reminder_service.dart';
@@ -117,7 +118,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
     await _reload();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Podsetnik je ponovo aktivan')),
+      SnackBar(content: Text(AppLocalizations.of(context).reminderReactivated)),
     );
   }
 
@@ -129,11 +130,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
     _reload();
   }
 
-  String _metaLine(Reminder r) {
+  String _metaLine(AppLocalizations l10n, Reminder r) {
     final hive = r.hiveUuid != null ? _hives[r.hiveUuid!] : null;
     final parts = <String>[_fmt.format(r.dueAt.toLocal())];
-    if (hive != null) parts.add('Košnica ${hive.barcode}');
-    if (_isOverdue(r) && !r.completed) parts.insert(0, 'Zakasnelo');
+    if (hive != null) parts.add(l10n.hiveBarcode(hive.barcode));
+    if (_isOverdue(r) && !r.completed) parts.insert(0, l10n.overdue);
     return parts.join(' · ');
   }
 
@@ -142,13 +143,14 @@ class _RemindersScreenState extends State<RemindersScreen> {
   }
 
   Widget _buildList() {
+    final l10n = AppLocalizations.of(context);
     final visible = _visible;
     if (_items.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            _showHistory ? 'Nema završenih podsetnika.' : 'Nema budućih podsetnika.',
+            _showHistory ? l10n.remindersEmptyHistory : l10n.remindersEmptyUpcoming,
             style: Theme.of(context).textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
@@ -156,12 +158,12 @@ class _RemindersScreenState extends State<RemindersScreen> {
       );
     }
     if (visible.isEmpty) {
-      final label = _dayFilter == 'today' ? 'danas' : 'sutra';
+      final label = _dayFilter == 'today' ? l10n.today : l10n.tomorrow;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'Nema podsetnika za $label.',
+            l10n.remindersNoneForDay(label.toLowerCase()),
             style: Theme.of(context).textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
@@ -205,7 +207,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _metaLine(r),
+                          _metaLine(l10n, r),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -230,13 +232,13 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   ),
                   if (!_showHistory && !r.completed)
                     IconButton(
-                      tooltip: 'Označi kao urađeno',
+                      tooltip: l10n.markDone,
                       icon: const Icon(Icons.check_circle_outline),
                       onPressed: () => _complete(r),
                     )
                   else if (_showHistory && r.completed)
                     IconButton(
-                      tooltip: 'Vrati u aktivne',
+                      tooltip: l10n.restoreActive,
                       icon: const Icon(Icons.undo),
                       onPressed: () => _reactivate(r),
                     )
@@ -256,15 +258,16 @@ class _RemindersScreenState extends State<RemindersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Podsetnici')),
+      appBar: AppBar(title: Text(l10n.reminders)),
       floatingActionButton: const HomeFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: Column(
         children: [
           SwitchListTile(
-            title: const Text('Prikaži istoriju'),
-            subtitle: Text(_showHistory ? 'Završeni podsetnici' : 'Budući i zakasneli'),
+            title: Text(l10n.remindersShowHistory),
+            subtitle: Text(_showHistory ? l10n.remindersCompletedList : l10n.remindersUpcomingList),
             value: _showHistory,
             activeThumbColor: AppColors.meadow,
             onChanged: (v) {
@@ -280,7 +283,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
             child: Row(
               children: [
                 FilterChip(
-                  label: const Text('Danas'),
+                  label: Text(l10n.today),
                   selected: _dayFilter == 'today',
                   selectedColor: AppColors.meadow,
                   checkmarkColor: Colors.white,
@@ -296,7 +299,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
-                  label: const Text('Sutra'),
+                  label: Text(l10n.tomorrow),
                   selected: _dayFilter == 'tomorrow',
                   selectedColor: AppColors.meadow,
                   checkmarkColor: Colors.white,

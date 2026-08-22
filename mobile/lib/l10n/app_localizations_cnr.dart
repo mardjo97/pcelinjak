@@ -630,4 +630,366 @@ class AppLocalizationsCnr extends AppLocalizations {
 
   @override
   String get openProfile => 'Otvori profil';
+
+  @override
+  String get authLoginInvalidCredentials => 'Pogrešan email ili lozinka.';
+
+  @override
+  String get authAccountNotActivated =>
+      'Nalog nije aktiviran. Proverite email za aktivacioni link.';
+
+  @override
+  String get authEmailExists => 'Korisnik sa ovim email-om već postoji.';
+
+  @override
+  String get authWrongPassword => 'Pogrešna lozinka.';
+
+  @override
+  String get authUserNotFound => 'Korisnik nije pronađen.';
+
+  @override
+  String get hiveSearchAllHint =>
+      'Sve košnice · filtrirajte po barkodu, imenu/RB pčelinjaka, tipu (LR, DB…), godini matice, poreklu, „markirana“…';
+
+  @override
+  String hiveSearchResultCount(int count) {
+    return '$count rezultata';
+  }
+
+  @override
+  String hiveSearchNoResults(String query) {
+    return 'Nema rezultata za „$query”.';
+  }
+
+  @override
+  String get noQueen => 'Bez matice';
+
+  @override
+  String get queenMarkedShort => 'markirana';
+
+  @override
+  String queenLine(String details) {
+    return 'Matica: $details';
+  }
+
+  @override
+  String apiaryNamed(int number, String name) {
+    return 'Pčelinjak $number · $name';
+  }
+
+  @override
+  String get remindersShowHistory => 'Prikaži istoriju';
+
+  @override
+  String get remindersCompletedList => 'Završeni podsetnici';
+
+  @override
+  String get remindersUpcomingList => 'Budući i zakasneli';
+
+  @override
+  String get today => 'Danas';
+
+  @override
+  String get tomorrow => 'Sutra';
+
+  @override
+  String get remindersEmptyUpcoming => 'Nema budućih podsetnika.';
+
+  @override
+  String get remindersEmptyHistory => 'Nema završenih podsetnika.';
+
+  @override
+  String remindersNoneForDay(String day) {
+    return 'Nema podsetnika za $day.';
+  }
+
+  @override
+  String get reminderReactivated => 'Podsetnik je ponovo aktivan';
+
+  @override
+  String get markDone => 'Označi kao urađeno';
+
+  @override
+  String get restoreActive => 'Vrati u aktivne';
+
+  @override
+  String hiveBarcode(String barcode) {
+    return 'Košnica $barcode';
+  }
+
+  @override
+  String get overdue => 'Zakasnelo';
+
+  @override
+  String get reminder => 'Podsetnik';
+
+  @override
+  String get reminderNotFound => 'Podsetnik nije pronađen.';
+
+  @override
+  String get completed => 'Završeno';
+
+  @override
+  String get related => 'Povezano';
+
+  @override
+  String get noLinkedHive => 'Nema povezane košnice.';
+
+  @override
+  String get openHive => 'Otvori košnicu';
+
+  @override
+  String get openGroup => 'Otvori grupu';
+
+  @override
+  String get recordInspection => 'Evidentiraj kontrolu';
+
+  @override
+  String get openInspection => 'Otvori kontrolu';
+
+  @override
+  String get reminderMarkedDone => 'Podsetnik označen kao urađen';
+
+  @override
+  String get hiveNotFound => 'Košnica nije pronađena.';
+
+  @override
+  String loadError(String error) {
+    return 'Greška pri učitavanju: $error';
+  }
+
+  @override
+  String get back => 'Nazad';
+
+  @override
+  String get previousHive => 'Prethodna košnica';
+
+  @override
+  String get nextHive => 'Sledeća košnica';
+
+  @override
+  String get editHive => 'Izmeni košnicu';
+
+  @override
+  String get editNotAllowed => 'Izmeni (nije dozvoljeno)';
+
+  @override
+  String get deleteHive => 'Obriši košnicu';
+
+  @override
+  String get deleteHiveConfirm =>
+      'Košnica će biti obrisana (može se sinhronizovati kao obrisana).';
+
+  @override
+  String get hiveStatusConfirmTitle => 'Status košnice';
+
+  @override
+  String hiveStatusConfirmBody(String status) {
+    return 'Postaviti status na „$status”?';
+  }
+
+  @override
+  String hiveStatusTransitionBlocked(String from, String to) {
+    return 'Nije dozvoljen prelaz $from → $to.';
+  }
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String get move => 'Selidba';
+
+  @override
+  String get locationNotEntered => 'Lokacija nije uneta';
+
+  @override
+  String get queenOnlyActive => 'Samo aktivna';
+
+  @override
+  String get enterQueen => 'Unesi maticu';
+
+  @override
+  String get editCurrentQueen => 'Izmeni trenutnu';
+
+  @override
+  String get editQueen => 'Izmeni maticu';
+
+  @override
+  String hiveQueenBlocked(String status) {
+    return 'Matica se menja samo na aktivnoj košnici (sada: $status).';
+  }
+
+  @override
+  String hiveHarvestBlocked(String status) {
+    return 'Prinos se unosi samo na aktivnoj košnici (sada: $status).';
+  }
+
+  @override
+  String get hiveEditBlocked =>
+      'Ugašena košnica se ne menja — prvo je vratite u aktivnu.';
+
+  @override
+  String hiveAddToGroupBlocked(String status) {
+    return 'Košnica je „$status” — u grupe se mogu dodati samo aktivne košnice.';
+  }
+
+  @override
+  String get noActiveQueen => 'Nema aktivne matice.';
+
+  @override
+  String queenYearLabel(String year) {
+    return 'Godina: $year';
+  }
+
+  @override
+  String queenMarkedLabel(String value) {
+    return 'Obeležena: $value';
+  }
+
+  @override
+  String get year => 'Godina';
+
+  @override
+  String get origin => 'Poreklo';
+
+  @override
+  String get marked => 'Obeležena';
+
+  @override
+  String get yes => 'DA';
+
+  @override
+  String get no => 'NE';
+
+  @override
+  String originWithValue(String value) {
+    return 'Poreklo: $value';
+  }
+
+  @override
+  String periodFrom(String date) {
+    return 'Od $date';
+  }
+
+  @override
+  String get newQueen => 'Nova matica';
+
+  @override
+  String get endQueen => 'Završi maticu';
+
+  @override
+  String get endQueenDied => 'Završi / uginula';
+
+  @override
+  String queenHistoryCount(int count) {
+    return 'Istorija matica ($count)';
+  }
+
+  @override
+  String currentQueenLine(String year, String period) {
+    return 'Trenutna: godina $year · $period';
+  }
+
+  @override
+  String get queenEndReasonLabel => 'Šta se desilo sa starom?';
+
+  @override
+  String get enterNewQueenAfter => 'Posle toga unesite podatke nove matice.';
+
+  @override
+  String get queenEndDied => 'Uginula';
+
+  @override
+  String get queenEndReplaced => 'Zamenjena';
+
+  @override
+  String get queenEndSuperseded => 'Zamenjena novom';
+
+  @override
+  String get queenEndOther => 'Drugo';
+
+  @override
+  String get hiveInspection => 'Kontrola košnice';
+
+  @override
+  String get addInspection => 'Dodaj kontrolu';
+
+  @override
+  String get noInspectionsYet => 'Još nema unetih kontrola za ovu košnicu.';
+
+  @override
+  String get lastInspection => 'Poslednja kontrola';
+
+  @override
+  String get source => 'Izvor';
+
+  @override
+  String allInspections(int count) {
+    return 'Sve kontrole ($count)';
+  }
+
+  @override
+  String get addNote => 'Dodaj napomenu';
+
+  @override
+  String get noNotesYet => 'Još nema napomena za ovu košnicu.';
+
+  @override
+  String get lastNote => 'Poslednja napomena';
+
+  @override
+  String reminderAt(String when) {
+    return 'Podsetnik: $when';
+  }
+
+  @override
+  String allNotes(int count) {
+    return 'Sve napomene ($count)';
+  }
+
+  @override
+  String get honeyHarvest => 'Prinos meda';
+
+  @override
+  String get addHarvest => 'Dodaj prinos';
+
+  @override
+  String harvestYearTotal(int year, String amount) {
+    return 'Ukupno $year: $amount kg';
+  }
+
+  @override
+  String get noHarvestsThisYear => 'Još nema unosa prinosa ove godine.';
+
+  @override
+  String allHarvests(int count) {
+    return 'Svi prinosi ($count)';
+  }
+
+  @override
+  String get deleteNoteTitle => 'Obriši napomenu';
+
+  @override
+  String get deleteNoteConfirm => 'Obrisati ovu napomenu?';
+
+  @override
+  String get inspectionSourceManual => 'Ručno';
+
+  @override
+  String get inspectionSourceGroup => 'Grupa kontrole';
+
+  @override
+  String get inspectionSourceReminder => 'Podsetnik';
+
+  @override
+  String get inspectionOutcomeOk => 'U redu';
+
+  @override
+  String get inspectionOutcomeFollowUp => 'Potrebna kontrola';
+
+  @override
+  String get inspectionOutcomeUrgent => 'Hitno';
+
+  @override
+  String get inspectionOutcomeResolved => 'Rešeno';
 }

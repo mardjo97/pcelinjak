@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../database/app_database.dart';
 import '../l10n/app_localizations.dart';
+import '../l10n/api_error.dart';
 import '../services/api_client.dart';
 import '../services/auth_sync.dart';
 import '../services/auto_sync_service.dart';
@@ -108,7 +109,7 @@ class _AuthScreenState extends State<AuthScreen> {
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomeScreen(api: widget.api)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(localizeApiError(l10n, e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../database/app_database.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../services/locale_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/apiary_edit_dialog.dart';
 import '../widgets/home_fab.dart';
@@ -413,13 +415,14 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final a = _apiary;
     final visible = _filtered;
     final q = _searchCtrl.text.trim();
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          a == null ? 'Pčelinjak' : 'Pčelinjak ${a.workNumber} · ${a.name}',
+          a == null ? l10n.appName : l10n.apiaryNamed(a.workNumber, a.name),
         ),
         actions: [
           IconButton(
@@ -453,25 +456,25 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
               child: Row(
                 children: [
                   _StatusChip(
-                    label: 'Aktivne',
+                    label: l10n.filterActive,
                     selected: _statusFilter == 'ACTIVE',
                     color: _statusColor('ACTIVE'),
                     onTap: () => _setStatusFilter('ACTIVE'),
                   ),
                   _StatusChip(
-                    label: 'Arhivirane',
+                    label: l10n.filterArchived,
                     selected: _statusFilter == 'ARCHIVED',
                     color: _statusColor('ARCHIVED'),
                     onTap: () => _setStatusFilter('ARCHIVED'),
                   ),
                   _StatusChip(
-                    label: 'Ugašene',
+                    label: l10n.filterDead,
                     selected: _statusFilter == 'DEAD',
                     color: _statusColor('DEAD'),
                     onTap: () => _setStatusFilter('DEAD'),
                   ),
                   _StatusChip(
-                    label: 'Sve',
+                    label: l10n.statusAll,
                     selected: _statusFilter == 'ALL',
                     color: AppColors.meadowDark,
                     onTap: () => _setStatusFilter('ALL'),
@@ -647,7 +650,7 @@ class _ApiaryScreenState extends State<ApiaryScreen> {
                                                     BorderRadius.circular(6),
                                               ),
                                               child: Text(
-                                                hiveStatuses[status] ?? status,
+                                                LocaleController.hiveStatusLabel(l10n, status),
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 11,

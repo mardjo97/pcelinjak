@@ -113,4 +113,60 @@ class LocaleController extends ChangeNotifier {
         return l10n.statusActive;
     }
   }
+
+  static String membershipStatusLabel(AppLocalizations l10n, String status) {
+    switch (status.toUpperCase()) {
+      case 'FINISHED':
+        return l10n.membershipFinished;
+      case 'REMOVED':
+        return l10n.membershipRemoved;
+      default:
+        return l10n.membershipActive;
+    }
+  }
+
+  static String periodLabel(AppLocalizations l10n, DateTime from, DateTime? to) {
+    final fromStr = from.toLocal().toString().split(' ').first;
+    if (to == null) return l10n.periodFrom(fromStr);
+    return '$fromStr → ${to.toLocal().toString().split(' ').first}';
+  }
+
+  static String queenEndReason(AppLocalizations l10n, String? reason) {
+    switch (reason) {
+      case 'DIED':
+        return l10n.queenEndDied;
+      case 'REPLACED':
+        return l10n.queenEndReplaced;
+      case 'SUPERSEDED':
+        return l10n.queenEndSuperseded;
+      case 'OTHER':
+        return l10n.queenEndOther;
+      default:
+        return reason ?? '';
+    }
+  }
+
+  static String inspectionSourceLabel(AppLocalizations l10n, String? sourceType) {
+    switch (sourceType) {
+      case 'CONTROL_GROUP':
+        return l10n.inspectionSourceGroup;
+      case 'REMINDER':
+        return l10n.inspectionSourceReminder;
+      default:
+        return l10n.inspectionSourceManual;
+    }
+  }
+
+  static String inspectionOutcomeLabel(AppLocalizations l10n, String value) {
+    switch (value) {
+      case 'FOLLOW_UP':
+        return l10n.inspectionOutcomeFollowUp;
+      case 'URGENT':
+        return l10n.inspectionOutcomeUrgent;
+      case 'RESOLVED':
+        return l10n.inspectionOutcomeResolved;
+      default:
+        return l10n.inspectionOutcomeOk;
+    }
+  }
 }

@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../database/app_database.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
+import '../services/locale_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/barcode_scan.dart';
 import '../widgets/home_fab.dart';
@@ -74,20 +76,21 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
     _search(_ctrl.text);
   }
 
-  String _queenLine(Queen? q) {
-    if (q == null) return 'Bez matice';
+  String _queenLine(AppLocalizations l10n, Queen? q) {
+    if (q == null) return l10n.noQueen;
     final parts = <String>[];
     if (q.queenYear != null) parts.add('${q.queenYear}');
-    if (q.marked) parts.add('markirana');
+    if (q.marked) parts.add(l10n.queenMarkedShort);
     if (q.origin != null && q.origin!.trim().isNotEmpty) parts.add(q.origin!);
-    return parts.isEmpty ? 'Matica' : 'Matica: ${parts.join(' · ')}';
+    return parts.isEmpty ? l10n.queen : l10n.queenLine(parts.join(' · '));
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final q = _ctrl.text.trim();
     return Scaffold(
-      appBar: AppBar(title: const Text('Pretraga košnica')),
+      appBar: AppBar(title: Text(l10n.hiveSearchTitle)),
       floatingActionButton: const HomeFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: Column(
@@ -101,14 +104,14 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
               onTapOutside: dismissKeyboardOnTapOutside,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Barkod, pčelinjak, tip, matica…',
+                hintText: l10n.hiveSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (q.isNotEmpty)
                       IconButton(
-                        tooltip: 'Obriši',
+                        tooltip: l10n.delete,
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _ctrl.clear();
@@ -116,7 +119,7 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
                         },
                       ),
                     IconButton(
-                      tooltip: 'Skeniraj',
+                      tooltip: l10n.scan,
                       icon: const Icon(Icons.qr_code_scanner),
                       onPressed: _scan,
                     ),
@@ -129,8 +132,8 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               q.isEmpty
-                  ? 'Sve košnice · filtrirajte po barkodu, imenu/RB pčelinjaka, tipu (LR, DB…), godini matice, poreklu, „markirana“…'
-                  : '${_hits.length} rezultat${_hits.length == 1 ? '' : 'a'}',
+                  ? l10n.hiveSearchAllHint
+                  : l10n.hiveSearchResultCount(_hits.length),
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: AppTheme.muted(context)),
@@ -147,8 +150,8 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           q.isEmpty
-                              ? 'Nema košnica.'
-                              : 'Nema rezultata za „$q”.',
+                              ? l10n.noHives
+                              : l10n.hiveSearchNoResults(q),
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
@@ -163,7 +166,7 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
                         final hit = _hits[i];
                         final h = hit.hive;
                         final a = hit.apiary;
-                        final status = hiveStatuses[h.status] ?? h.status;
+                        final status = LocaleController.hiveStatusLabel(l10n, h.status);
                         return Material(
                           color: AppTheme.card(context),
                           borderRadius: BorderRadius.circular(14),
@@ -196,8 +199,8 @@ class _HiveSearchScreenState extends State<HiveSearchScreen> {
                             subtitle: Text(
                               [
                                 if (a != null)
-                                  'Pčelinjak ${a.workNumber} · ${a.name}',
-                                _queenLine(hit.queen),
+                                  l10n.apiaryNamed(a.workNumber, a.name),
+                                _queenLine(l10n, hit.queen),
                                 if (h.status != 'ACTIVE') status,
                               ].join('\n'),
                             ),

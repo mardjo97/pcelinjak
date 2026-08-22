@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../database/app_database.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../services/group_shared_data_sync.dart';
 import '../services/reminder_notification_title.dart';
@@ -21,11 +22,11 @@ Future<bool> confirmDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Otkaži'),
+          child: Text(AppLocalizations.of(ctx).cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Potvrdi'),
+          child: Text(AppLocalizations.of(ctx).confirm),
         ),
       ],
     ),

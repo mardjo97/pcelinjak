@@ -244,5 +244,228 @@
   "settingsTextVeryLarge": "Veća",
   "settingsAutorotation": "Autorotacija",
   "settingsAutorotationSubtitle": "Dozvoli pejzažni prikaz",
-  "openProfile": "Otvori profil"
+  "openProfile": "Otvori profil",
+  "authLoginInvalidCredentials": "Pogrešan email ili lozinka.",
+  "authAccountNotActivated": "Nalog nije aktiviran. Proverite email za aktivacioni link.",
+  "authEmailExists": "Korisnik sa ovim email-om već postoji.",
+  "authWrongPassword": "Pogrešna lozinka.",
+  "authUserNotFound": "Korisnik nije pronađen.",
+  "hiveSearchAllHint": "Sve košnice · filtrirajte po barkodu, imenu/RB pčelinjaka, tipu (LR, DB…), godini matice, poreklu, „markirana“…",
+  "hiveSearchResultCount": "{count} rezultata",
+  "@hiveSearchResultCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "hiveSearchNoResults": "Nema rezultata za „{query}”.",
+  "@hiveSearchNoResults": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "noQueen": "Bez matice",
+  "queenMarkedShort": "markirana",
+  "queenLine": "Matica: {details}",
+  "@queenLine": {
+    "placeholders": {
+      "details": {"type": "String"}
+    }
+  },
+  "apiaryNamed": "Pčelinjak {number} · {name}",
+  "@apiaryNamed": {
+    "placeholders": {
+      "number": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "remindersShowHistory": "Prikaži istoriju",
+  "remindersCompletedList": "Završeni podsetnici",
+  "remindersUpcomingList": "Budući i zakasneli",
+  "today": "Danas",
+  "tomorrow": "Sutra",
+  "remindersEmptyUpcoming": "Nema budućih podsetnika.",
+  "remindersEmptyHistory": "Nema završenih podsetnika.",
+  "remindersNoneForDay": "Nema podsetnika za {day}.",
+  "@remindersNoneForDay": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "reminderReactivated": "Podsetnik je ponovo aktivan",
+  "markDone": "Označi kao urađeno",
+  "restoreActive": "Vrati u aktivne",
+  "hiveBarcode": "Košnica {barcode}",
+  "@hiveBarcode": {
+    "placeholders": {
+      "barcode": {"type": "String"}
+    }
+  },
+  "overdue": "Zakasnelo",
+  "reminder": "Podsetnik",
+  "reminderNotFound": "Podsetnik nije pronađen.",
+  "completed": "Završeno",
+  "related": "Povezano",
+  "noLinkedHive": "Nema povezane košnice.",
+  "openHive": "Otvori košnicu",
+  "openGroup": "Otvori grupu",
+  "recordInspection": "Evidentiraj kontrolu",
+  "openInspection": "Otvori kontrolu",
+  "reminderMarkedDone": "Podsetnik označen kao urađen",
+  "hiveNotFound": "Košnica nije pronađena.",
+  "loadError": "Greška pri učitavanju: {error}",
+  "@loadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "back": "Nazad",
+  "previousHive": "Prethodna košnica",
+  "nextHive": "Sledeća košnica",
+  "editHive": "Izmijeni košnicu",
+  "editNotAllowed": "Izmijeni (nije dozvoljeno)",
+  "deleteHive": "Obriši košnicu",
+  "deleteHiveConfirm": "Košnica će biti obrisana (može se sinhronizovati kao obrisana).",
+  "hiveStatusConfirmTitle": "Status košnice",
+  "hiveStatusConfirmBody": "Postaviti status na „{status}”?",
+  "@hiveStatusConfirmBody": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "hiveStatusTransitionBlocked": "Nije dozvoljen prelaz {from} → {to}.",
+  "@hiveStatusTransitionBlocked": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
+  "status": "Status",
+  "move": "Selidba",
+  "locationNotEntered": "Lokacija nije uneta",
+  "queenOnlyActive": "Samo aktivna",
+  "enterQueen": "Unesi maticu",
+  "editCurrentQueen": "Izmijeni trenutnu",
+  "editQueen": "Izmijeni maticu",
+  "hiveQueenBlocked": "Matica se menja samo na aktivnoj košnici (sada: {status}).",
+  "@hiveQueenBlocked": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "hiveHarvestBlocked": "Prinos se unosi samo na aktivnoj košnici (sada: {status}).",
+  "@hiveHarvestBlocked": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "hiveEditBlocked": "Ugašena košnica se ne menja — prvo je vratite u aktivnu.",
+  "hiveAddToGroupBlocked": "Košnica je „{status}” — u grupe se mogu dodati samo aktivne košnice.",
+  "@hiveAddToGroupBlocked": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "noActiveQueen": "Nema aktivne matice.",
+  "queenYearLabel": "Godina: {year}",
+  "@queenYearLabel": {
+    "placeholders": {
+      "year": {"type": "String"}
+    }
+  },
+  "queenMarkedLabel": "Obeležena: {value}",
+  "@queenMarkedLabel": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "year": "Godina",
+  "origin": "Poreklo",
+  "marked": "Obeležena",
+  "yes": "DA",
+  "no": "NE",
+  "originWithValue": "Poreklo: {value}",
+  "@originWithValue": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "periodFrom": "Od {date}",
+  "@periodFrom": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "newQueen": "Nova matica",
+  "endQueen": "Završi maticu",
+  "endQueenDied": "Završi / uginula",
+  "queenHistoryCount": "Istorija matica ({count})",
+  "@queenHistoryCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "currentQueenLine": "Trenutna: godina {year} · {period}",
+  "@currentQueenLine": {
+    "placeholders": {
+      "year": {"type": "String"},
+      "period": {"type": "String"}
+    }
+  },
+  "queenEndReasonLabel": "Šta se desilo sa starom?",
+  "enterNewQueenAfter": "Posle toga unesite podatke nove matice.",
+  "queenEndDied": "Uginula",
+  "queenEndReplaced": "Zamenjena",
+  "queenEndSuperseded": "Zamenjena novom",
+  "queenEndOther": "Drugo",
+  "hiveInspection": "Kontrola košnice",
+  "addInspection": "Dodaj kontrolu",
+  "noInspectionsYet": "Još nema unetih kontrola za ovu košnicu.",
+  "lastInspection": "Poslednja kontrola",
+  "source": "Izvor",
+  "allInspections": "Sve kontrole ({count})",
+  "@allInspections": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "addNote": "Dodaj napomenu",
+  "noNotesYet": "Još nema napomena za ovu košnicu.",
+  "lastNote": "Poslednja napomena",
+  "reminderAt": "Podsetnik: {when}",
+  "@reminderAt": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "allNotes": "Sve napomene ({count})",
+  "@allNotes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "honeyHarvest": "Prinos meda",
+  "addHarvest": "Dodaj prinos",
+  "harvestYearTotal": "Ukupno {year}: {amount} kg",
+  "@harvestYearTotal": {
+    "placeholders": {
+      "year": {"type": "int"},
+      "amount": {"type": "String"}
+    }
+  },
+  "noHarvestsThisYear": "Još nema unosa prinosa ove godine.",
+  "allHarvests": "Svi prinosi ({count})",
+  "@allHarvests": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteNoteTitle": "Obriši napomenu",
+  "deleteNoteConfirm": "Obrisati ovu napomenu?",
+  "inspectionSourceManual": "Ručno",
+  "inspectionSourceGroup": "Grupa kontrole",
+  "inspectionSourceReminder": "Podsetnik",
+  "inspectionOutcomeOk": "U redu",
+  "inspectionOutcomeFollowUp": "Potrebna kontrola",
+  "inspectionOutcomeUrgent": "Hitno",
+  "inspectionOutcomeResolved": "Rešeno"
 }

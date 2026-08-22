@@ -1,4 +1,5 @@
-import '../theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
+import '../services/locale_service.dart';
 
 /// Pravila šta je dozvoljeno po statusu košnice.
 ///
@@ -20,8 +21,8 @@ class HiveStatusRules {
     return status;
   }
 
-  static String label(String? status) =>
-      hiveStatuses[normalize(status)] ?? normalize(status);
+  static String label(AppLocalizations l10n, String? status) =>
+      LocaleController.hiveStatusLabel(l10n, normalize(status));
 
   static bool isActive(String? status) => normalize(status) == 'ACTIVE';
   static bool isArchived(String? status) => normalize(status) == 'ARCHIVED';
@@ -49,23 +50,23 @@ class HiveStatusRules {
   static bool canTransitionTo(String? from, String to) =>
       allowedTransitions(from).contains(to);
 
-  static String? blockReasonAddToGroup(String? status) {
+  static String? blockReasonAddToGroup(AppLocalizations l10n, String? status) {
     if (canAddToGroup(status)) return null;
-    return 'Košnica je „${label(status)}” — u grupe se mogu dodati samo aktivne košnice.';
+    return l10n.hiveAddToGroupBlocked(label(l10n, status));
   }
 
-  static String? blockReasonQueen(String? status) {
+  static String? blockReasonQueen(AppLocalizations l10n, String? status) {
     if (canManageQueen(status)) return null;
-    return 'Matica se menja samo na aktivnoj košnici (sada: ${label(status)}).';
+    return l10n.hiveQueenBlocked(label(l10n, status));
   }
 
-  static String? blockReasonHarvest(String? status) {
+  static String? blockReasonHarvest(AppLocalizations l10n, String? status) {
     if (canAddHarvest(status)) return null;
-    return 'Prinos se unosi samo na aktivnoj košnici (sada: ${label(status)}).';
+    return l10n.hiveHarvestBlocked(label(l10n, status));
   }
 
-  static String? blockReasonEditHive(String? status) {
+  static String? blockReasonEditHive(AppLocalizations l10n, String? status) {
     if (canEditHive(status)) return null;
-    return 'Ugašena košnica se ne menja — prvo je vratite u aktivnu.';
+    return l10n.hiveEditBlocked;
   }
 }

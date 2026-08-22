@@ -1273,6 +1273,630 @@ abstract class AppLocalizations {
   /// In sr, this message translates to:
   /// **'Otvori profil'**
   String get openProfile;
+
+  /// No description provided for @authLoginInvalidCredentials.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pogrešan email ili lozinka.'**
+  String get authLoginInvalidCredentials;
+
+  /// No description provided for @authAccountNotActivated.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nalog nije aktiviran. Proverite email za aktivacioni link.'**
+  String get authAccountNotActivated;
+
+  /// No description provided for @authEmailExists.
+  ///
+  /// In sr, this message translates to:
+  /// **'Korisnik sa ovim email-om već postoji.'**
+  String get authEmailExists;
+
+  /// No description provided for @authWrongPassword.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pogrešna lozinka.'**
+  String get authWrongPassword;
+
+  /// No description provided for @authUserNotFound.
+  ///
+  /// In sr, this message translates to:
+  /// **'Korisnik nije pronađen.'**
+  String get authUserNotFound;
+
+  /// No description provided for @hiveSearchAllHint.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sve košnice · filtrirajte po barkodu, imenu/RB pčelinjaka, tipu (LR, DB…), godini matice, poreklu, „markirana“…'**
+  String get hiveSearchAllHint;
+
+  /// No description provided for @hiveSearchResultCount.
+  ///
+  /// In sr, this message translates to:
+  /// **'{count} rezultata'**
+  String hiveSearchResultCount(int count);
+
+  /// No description provided for @hiveSearchNoResults.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema rezultata za „{query}”.'**
+  String hiveSearchNoResults(String query);
+
+  /// No description provided for @noQueen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Bez matice'**
+  String get noQueen;
+
+  /// No description provided for @queenMarkedShort.
+  ///
+  /// In sr, this message translates to:
+  /// **'markirana'**
+  String get queenMarkedShort;
+
+  /// No description provided for @queenLine.
+  ///
+  /// In sr, this message translates to:
+  /// **'Matica: {details}'**
+  String queenLine(String details);
+
+  /// No description provided for @apiaryNamed.
+  ///
+  /// In sr, this message translates to:
+  /// **'Pčelinjak {number} · {name}'**
+  String apiaryNamed(int number, String name);
+
+  /// No description provided for @remindersShowHistory.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prikaži istoriju'**
+  String get remindersShowHistory;
+
+  /// No description provided for @remindersCompletedList.
+  ///
+  /// In sr, this message translates to:
+  /// **'Završeni podsetnici'**
+  String get remindersCompletedList;
+
+  /// No description provided for @remindersUpcomingList.
+  ///
+  /// In sr, this message translates to:
+  /// **'Budući i zakasneli'**
+  String get remindersUpcomingList;
+
+  /// No description provided for @today.
+  ///
+  /// In sr, this message translates to:
+  /// **'Danas'**
+  String get today;
+
+  /// No description provided for @tomorrow.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sutra'**
+  String get tomorrow;
+
+  /// No description provided for @remindersEmptyUpcoming.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema budućih podsetnika.'**
+  String get remindersEmptyUpcoming;
+
+  /// No description provided for @remindersEmptyHistory.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema završenih podsetnika.'**
+  String get remindersEmptyHistory;
+
+  /// No description provided for @remindersNoneForDay.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema podsetnika za {day}.'**
+  String remindersNoneForDay(String day);
+
+  /// No description provided for @reminderReactivated.
+  ///
+  /// In sr, this message translates to:
+  /// **'Podsetnik je ponovo aktivan'**
+  String get reminderReactivated;
+
+  /// No description provided for @markDone.
+  ///
+  /// In sr, this message translates to:
+  /// **'Označi kao urađeno'**
+  String get markDone;
+
+  /// No description provided for @restoreActive.
+  ///
+  /// In sr, this message translates to:
+  /// **'Vrati u aktivne'**
+  String get restoreActive;
+
+  /// No description provided for @hiveBarcode.
+  ///
+  /// In sr, this message translates to:
+  /// **'Košnica {barcode}'**
+  String hiveBarcode(String barcode);
+
+  /// No description provided for @overdue.
+  ///
+  /// In sr, this message translates to:
+  /// **'Zakasnelo'**
+  String get overdue;
+
+  /// No description provided for @reminder.
+  ///
+  /// In sr, this message translates to:
+  /// **'Podsetnik'**
+  String get reminder;
+
+  /// No description provided for @reminderNotFound.
+  ///
+  /// In sr, this message translates to:
+  /// **'Podsetnik nije pronađen.'**
+  String get reminderNotFound;
+
+  /// No description provided for @completed.
+  ///
+  /// In sr, this message translates to:
+  /// **'Završeno'**
+  String get completed;
+
+  /// No description provided for @related.
+  ///
+  /// In sr, this message translates to:
+  /// **'Povezano'**
+  String get related;
+
+  /// No description provided for @noLinkedHive.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema povezane košnice.'**
+  String get noLinkedHive;
+
+  /// No description provided for @openHive.
+  ///
+  /// In sr, this message translates to:
+  /// **'Otvori košnicu'**
+  String get openHive;
+
+  /// No description provided for @openGroup.
+  ///
+  /// In sr, this message translates to:
+  /// **'Otvori grupu'**
+  String get openGroup;
+
+  /// No description provided for @recordInspection.
+  ///
+  /// In sr, this message translates to:
+  /// **'Evidentiraj kontrolu'**
+  String get recordInspection;
+
+  /// No description provided for @openInspection.
+  ///
+  /// In sr, this message translates to:
+  /// **'Otvori kontrolu'**
+  String get openInspection;
+
+  /// No description provided for @reminderMarkedDone.
+  ///
+  /// In sr, this message translates to:
+  /// **'Podsetnik označen kao urađen'**
+  String get reminderMarkedDone;
+
+  /// No description provided for @hiveNotFound.
+  ///
+  /// In sr, this message translates to:
+  /// **'Košnica nije pronađena.'**
+  String get hiveNotFound;
+
+  /// No description provided for @loadError.
+  ///
+  /// In sr, this message translates to:
+  /// **'Greška pri učitavanju: {error}'**
+  String loadError(String error);
+
+  /// No description provided for @back.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nazad'**
+  String get back;
+
+  /// No description provided for @previousHive.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prethodna košnica'**
+  String get previousHive;
+
+  /// No description provided for @nextHive.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sledeća košnica'**
+  String get nextHive;
+
+  /// No description provided for @editHive.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izmeni košnicu'**
+  String get editHive;
+
+  /// No description provided for @editNotAllowed.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izmeni (nije dozvoljeno)'**
+  String get editNotAllowed;
+
+  /// No description provided for @deleteHive.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obriši košnicu'**
+  String get deleteHive;
+
+  /// No description provided for @deleteHiveConfirm.
+  ///
+  /// In sr, this message translates to:
+  /// **'Košnica će biti obrisana (može se sinhronizovati kao obrisana).'**
+  String get deleteHiveConfirm;
+
+  /// No description provided for @hiveStatusConfirmTitle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Status košnice'**
+  String get hiveStatusConfirmTitle;
+
+  /// No description provided for @hiveStatusConfirmBody.
+  ///
+  /// In sr, this message translates to:
+  /// **'Postaviti status na „{status}”?'**
+  String hiveStatusConfirmBody(String status);
+
+  /// No description provided for @hiveStatusTransitionBlocked.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nije dozvoljen prelaz {from} → {to}.'**
+  String hiveStatusTransitionBlocked(String from, String to);
+
+  /// No description provided for @status.
+  ///
+  /// In sr, this message translates to:
+  /// **'Status'**
+  String get status;
+
+  /// No description provided for @move.
+  ///
+  /// In sr, this message translates to:
+  /// **'Selidba'**
+  String get move;
+
+  /// No description provided for @locationNotEntered.
+  ///
+  /// In sr, this message translates to:
+  /// **'Lokacija nije uneta'**
+  String get locationNotEntered;
+
+  /// No description provided for @queenOnlyActive.
+  ///
+  /// In sr, this message translates to:
+  /// **'Samo aktivna'**
+  String get queenOnlyActive;
+
+  /// No description provided for @enterQueen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Unesi maticu'**
+  String get enterQueen;
+
+  /// No description provided for @editCurrentQueen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izmeni trenutnu'**
+  String get editCurrentQueen;
+
+  /// No description provided for @editQueen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izmeni maticu'**
+  String get editQueen;
+
+  /// No description provided for @hiveQueenBlocked.
+  ///
+  /// In sr, this message translates to:
+  /// **'Matica se menja samo na aktivnoj košnici (sada: {status}).'**
+  String hiveQueenBlocked(String status);
+
+  /// No description provided for @hiveHarvestBlocked.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prinos se unosi samo na aktivnoj košnici (sada: {status}).'**
+  String hiveHarvestBlocked(String status);
+
+  /// No description provided for @hiveEditBlocked.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ugašena košnica se ne menja — prvo je vratite u aktivnu.'**
+  String get hiveEditBlocked;
+
+  /// No description provided for @hiveAddToGroupBlocked.
+  ///
+  /// In sr, this message translates to:
+  /// **'Košnica je „{status}” — u grupe se mogu dodati samo aktivne košnice.'**
+  String hiveAddToGroupBlocked(String status);
+
+  /// No description provided for @noActiveQueen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nema aktivne matice.'**
+  String get noActiveQueen;
+
+  /// No description provided for @queenYearLabel.
+  ///
+  /// In sr, this message translates to:
+  /// **'Godina: {year}'**
+  String queenYearLabel(String year);
+
+  /// No description provided for @queenMarkedLabel.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obeležena: {value}'**
+  String queenMarkedLabel(String value);
+
+  /// No description provided for @year.
+  ///
+  /// In sr, this message translates to:
+  /// **'Godina'**
+  String get year;
+
+  /// No description provided for @origin.
+  ///
+  /// In sr, this message translates to:
+  /// **'Poreklo'**
+  String get origin;
+
+  /// No description provided for @marked.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obeležena'**
+  String get marked;
+
+  /// No description provided for @yes.
+  ///
+  /// In sr, this message translates to:
+  /// **'DA'**
+  String get yes;
+
+  /// No description provided for @no.
+  ///
+  /// In sr, this message translates to:
+  /// **'NE'**
+  String get no;
+
+  /// No description provided for @originWithValue.
+  ///
+  /// In sr, this message translates to:
+  /// **'Poreklo: {value}'**
+  String originWithValue(String value);
+
+  /// No description provided for @periodFrom.
+  ///
+  /// In sr, this message translates to:
+  /// **'Od {date}'**
+  String periodFrom(String date);
+
+  /// No description provided for @newQueen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Nova matica'**
+  String get newQueen;
+
+  /// No description provided for @endQueen.
+  ///
+  /// In sr, this message translates to:
+  /// **'Završi maticu'**
+  String get endQueen;
+
+  /// No description provided for @endQueenDied.
+  ///
+  /// In sr, this message translates to:
+  /// **'Završi / uginula'**
+  String get endQueenDied;
+
+  /// No description provided for @queenHistoryCount.
+  ///
+  /// In sr, this message translates to:
+  /// **'Istorija matica ({count})'**
+  String queenHistoryCount(int count);
+
+  /// No description provided for @currentQueenLine.
+  ///
+  /// In sr, this message translates to:
+  /// **'Trenutna: godina {year} · {period}'**
+  String currentQueenLine(String year, String period);
+
+  /// No description provided for @queenEndReasonLabel.
+  ///
+  /// In sr, this message translates to:
+  /// **'Šta se desilo sa starom?'**
+  String get queenEndReasonLabel;
+
+  /// No description provided for @enterNewQueenAfter.
+  ///
+  /// In sr, this message translates to:
+  /// **'Posle toga unesite podatke nove matice.'**
+  String get enterNewQueenAfter;
+
+  /// No description provided for @queenEndDied.
+  ///
+  /// In sr, this message translates to:
+  /// **'Uginula'**
+  String get queenEndDied;
+
+  /// No description provided for @queenEndReplaced.
+  ///
+  /// In sr, this message translates to:
+  /// **'Zamenjena'**
+  String get queenEndReplaced;
+
+  /// No description provided for @queenEndSuperseded.
+  ///
+  /// In sr, this message translates to:
+  /// **'Zamenjena novom'**
+  String get queenEndSuperseded;
+
+  /// No description provided for @queenEndOther.
+  ///
+  /// In sr, this message translates to:
+  /// **'Drugo'**
+  String get queenEndOther;
+
+  /// No description provided for @hiveInspection.
+  ///
+  /// In sr, this message translates to:
+  /// **'Kontrola košnice'**
+  String get hiveInspection;
+
+  /// No description provided for @addInspection.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj kontrolu'**
+  String get addInspection;
+
+  /// No description provided for @noInspectionsYet.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još nema unetih kontrola za ovu košnicu.'**
+  String get noInspectionsYet;
+
+  /// No description provided for @lastInspection.
+  ///
+  /// In sr, this message translates to:
+  /// **'Poslednja kontrola'**
+  String get lastInspection;
+
+  /// No description provided for @source.
+  ///
+  /// In sr, this message translates to:
+  /// **'Izvor'**
+  String get source;
+
+  /// No description provided for @allInspections.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sve kontrole ({count})'**
+  String allInspections(int count);
+
+  /// No description provided for @addNote.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj napomenu'**
+  String get addNote;
+
+  /// No description provided for @noNotesYet.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još nema napomena za ovu košnicu.'**
+  String get noNotesYet;
+
+  /// No description provided for @lastNote.
+  ///
+  /// In sr, this message translates to:
+  /// **'Poslednja napomena'**
+  String get lastNote;
+
+  /// No description provided for @reminderAt.
+  ///
+  /// In sr, this message translates to:
+  /// **'Podsetnik: {when}'**
+  String reminderAt(String when);
+
+  /// No description provided for @allNotes.
+  ///
+  /// In sr, this message translates to:
+  /// **'Sve napomene ({count})'**
+  String allNotes(int count);
+
+  /// No description provided for @honeyHarvest.
+  ///
+  /// In sr, this message translates to:
+  /// **'Prinos meda'**
+  String get honeyHarvest;
+
+  /// No description provided for @addHarvest.
+  ///
+  /// In sr, this message translates to:
+  /// **'Dodaj prinos'**
+  String get addHarvest;
+
+  /// No description provided for @harvestYearTotal.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ukupno {year}: {amount} kg'**
+  String harvestYearTotal(int year, String amount);
+
+  /// No description provided for @noHarvestsThisYear.
+  ///
+  /// In sr, this message translates to:
+  /// **'Još nema unosa prinosa ove godine.'**
+  String get noHarvestsThisYear;
+
+  /// No description provided for @allHarvests.
+  ///
+  /// In sr, this message translates to:
+  /// **'Svi prinosi ({count})'**
+  String allHarvests(int count);
+
+  /// No description provided for @deleteNoteTitle.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obriši napomenu'**
+  String get deleteNoteTitle;
+
+  /// No description provided for @deleteNoteConfirm.
+  ///
+  /// In sr, this message translates to:
+  /// **'Obrisati ovu napomenu?'**
+  String get deleteNoteConfirm;
+
+  /// No description provided for @inspectionSourceManual.
+  ///
+  /// In sr, this message translates to:
+  /// **'Ručno'**
+  String get inspectionSourceManual;
+
+  /// No description provided for @inspectionSourceGroup.
+  ///
+  /// In sr, this message translates to:
+  /// **'Grupa kontrole'**
+  String get inspectionSourceGroup;
+
+  /// No description provided for @inspectionSourceReminder.
+  ///
+  /// In sr, this message translates to:
+  /// **'Podsetnik'**
+  String get inspectionSourceReminder;
+
+  /// No description provided for @inspectionOutcomeOk.
+  ///
+  /// In sr, this message translates to:
+  /// **'U redu'**
+  String get inspectionOutcomeOk;
+
+  /// No description provided for @inspectionOutcomeFollowUp.
+  ///
+  /// In sr, this message translates to:
+  /// **'Potrebna kontrola'**
+  String get inspectionOutcomeFollowUp;
+
+  /// No description provided for @inspectionOutcomeUrgent.
+  ///
+  /// In sr, this message translates to:
+  /// **'Hitno'**
+  String get inspectionOutcomeUrgent;
+
+  /// No description provided for @inspectionOutcomeResolved.
+  ///
+  /// In sr, this message translates to:
+  /// **'Rešeno'**
+  String get inspectionOutcomeResolved;
 }
 
 class _AppLocalizationsDelegate

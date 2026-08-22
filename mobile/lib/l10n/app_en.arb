@@ -244,5 +244,228 @@
   "settingsTextVeryLarge": "Larger",
   "settingsAutorotation": "Autorotation",
   "settingsAutorotationSubtitle": "Allow landscape orientation",
-  "openProfile": "Open profile"
+  "openProfile": "Open profile",
+  "authLoginInvalidCredentials": "Wrong email or password.",
+  "authAccountNotActivated": "Account is not activated. Check your email for the activation link.",
+  "authEmailExists": "A user with this email already exists.",
+  "authWrongPassword": "Wrong password.",
+  "authUserNotFound": "User not found.",
+  "hiveSearchAllHint": "All hives · filter by barcode, apiary name/number, type (LR, DB…), queen year, origin, “marked”…",
+  "hiveSearchResultCount": "{count} results",
+  "@hiveSearchResultCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "hiveSearchNoResults": "No results for “{query}”.",
+  "@hiveSearchNoResults": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "noQueen": "No queen",
+  "queenMarkedShort": "marked",
+  "queenLine": "Queen: {details}",
+  "@queenLine": {
+    "placeholders": {
+      "details": {"type": "String"}
+    }
+  },
+  "apiaryNamed": "Apiary {number} · {name}",
+  "@apiaryNamed": {
+    "placeholders": {
+      "number": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "remindersShowHistory": "Show history",
+  "remindersCompletedList": "Completed reminders",
+  "remindersUpcomingList": "Upcoming and overdue",
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "remindersEmptyUpcoming": "No upcoming reminders.",
+  "remindersEmptyHistory": "No completed reminders.",
+  "remindersNoneForDay": "No reminders for {day}.",
+  "@remindersNoneForDay": {
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "reminderReactivated": "Reminder is active again",
+  "markDone": "Mark as done",
+  "restoreActive": "Restore to active",
+  "hiveBarcode": "Hive {barcode}",
+  "@hiveBarcode": {
+    "placeholders": {
+      "barcode": {"type": "String"}
+    }
+  },
+  "overdue": "Overdue",
+  "reminder": "Reminder",
+  "reminderNotFound": "Reminder not found.",
+  "completed": "Completed",
+  "related": "Related",
+  "noLinkedHive": "No linked hive.",
+  "openHive": "Open hive",
+  "openGroup": "Open group",
+  "recordInspection": "Record inspection",
+  "openInspection": "Open inspection",
+  "reminderMarkedDone": "Reminder marked as done",
+  "hiveNotFound": "Hive not found.",
+  "loadError": "Could not load: {error}",
+  "@loadError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "back": "Back",
+  "previousHive": "Previous hive",
+  "nextHive": "Next hive",
+  "editHive": "Edit hive",
+  "editNotAllowed": "Edit (not allowed)",
+  "deleteHive": "Delete hive",
+  "deleteHiveConfirm": "The hive will be deleted (it can sync as deleted).",
+  "hiveStatusConfirmTitle": "Hive status",
+  "hiveStatusConfirmBody": "Set status to “{status}”?",
+  "@hiveStatusConfirmBody": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "hiveStatusTransitionBlocked": "Cannot change {from} → {to}.",
+  "@hiveStatusTransitionBlocked": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
+  "status": "Status",
+  "move": "Move",
+  "locationNotEntered": "Location not entered",
+  "queenOnlyActive": "Active only",
+  "enterQueen": "Add queen",
+  "editCurrentQueen": "Edit current",
+  "editQueen": "Edit queen",
+  "hiveQueenBlocked": "The queen can be changed only on an active hive (now: {status}).",
+  "@hiveQueenBlocked": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "hiveHarvestBlocked": "Harvest can be added only on an active hive (now: {status}).",
+  "@hiveHarvestBlocked": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "hiveEditBlocked": "A dead hive cannot be edited — set it to active first.",
+  "hiveAddToGroupBlocked": "Hive is “{status}” — only active hives can be added to groups.",
+  "@hiveAddToGroupBlocked": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "noActiveQueen": "No active queen.",
+  "queenYearLabel": "Year: {year}",
+  "@queenYearLabel": {
+    "placeholders": {
+      "year": {"type": "String"}
+    }
+  },
+  "queenMarkedLabel": "Marked: {value}",
+  "@queenMarkedLabel": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "year": "Year",
+  "origin": "Origin",
+  "marked": "Marked",
+  "yes": "YES",
+  "no": "NO",
+  "originWithValue": "Origin: {value}",
+  "@originWithValue": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "periodFrom": "From {date}",
+  "@periodFrom": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "newQueen": "New queen",
+  "endQueen": "End queen",
+  "endQueenDied": "End / died",
+  "queenHistoryCount": "Queen history ({count})",
+  "@queenHistoryCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "currentQueenLine": "Current: year {year} · {period}",
+  "@currentQueenLine": {
+    "placeholders": {
+      "year": {"type": "String"},
+      "period": {"type": "String"}
+    }
+  },
+  "queenEndReasonLabel": "What happened to the previous queen?",
+  "enterNewQueenAfter": "Then enter the new queen’s details.",
+  "queenEndDied": "Died",
+  "queenEndReplaced": "Replaced",
+  "queenEndSuperseded": "Superseded",
+  "queenEndOther": "Other",
+  "hiveInspection": "Hive inspection",
+  "addInspection": "Add inspection",
+  "noInspectionsYet": "No inspections for this hive yet.",
+  "lastInspection": "Latest inspection",
+  "source": "Source",
+  "allInspections": "All inspections ({count})",
+  "@allInspections": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "addNote": "Add note",
+  "noNotesYet": "No notes for this hive yet.",
+  "lastNote": "Latest note",
+  "reminderAt": "Reminder: {when}",
+  "@reminderAt": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "allNotes": "All notes ({count})",
+  "@allNotes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "honeyHarvest": "Honey yield",
+  "addHarvest": "Add harvest",
+  "harvestYearTotal": "Total {year}: {amount} kg",
+  "@harvestYearTotal": {
+    "placeholders": {
+      "year": {"type": "int"},
+      "amount": {"type": "String"}
+    }
+  },
+  "noHarvestsThisYear": "No harvests recorded this year.",
+  "allHarvests": "All harvests ({count})",
+  "@allHarvests": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "deleteNoteTitle": "Delete note",
+  "deleteNoteConfirm": "Delete this note?",
+  "inspectionSourceManual": "Manual",
+  "inspectionSourceGroup": "Inspection group",
+  "inspectionSourceReminder": "Reminder",
+  "inspectionOutcomeOk": "OK",
+  "inspectionOutcomeFollowUp": "Follow-up needed",
+  "inspectionOutcomeUrgent": "Urgent",
+  "inspectionOutcomeResolved": "Resolved"
 }
